@@ -2,16 +2,16 @@
 
 import { use, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Check, PencilLine, X } from 'lucide-react';
+import { ArrowLeft, Check, Clock, PencilLine, X } from 'lucide-react';
 import Badge, { type BadgeVariant } from '@/components/shared/Badge';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/lib/apiError';
 import ApplicationSummary from '@/components/admin/applications/ApplicationSummary';
-import DocumentTile from '@/components/admin/applications/DocumentTile';
+import DocumentTile, { type DocumentStatus } from '@/components/admin/applications/DocumentTile';
 import ApproveModal from '@/components/admin/applications/ApproveModal';
 import RequestChangesModal from '@/components/admin/applications/RequestChangesModal';
 import CredentialsModal from '@/components/admin/applications/CredentialsModal';
-import { useApplicationDetail, type IssuedCredentials } from '@/components/admin/applications/useApplicationDetail';
+import { useApplicationDetail, type ApplicationDocument, type IssuedCredentials } from '@/components/admin/applications/useApplicationDetail';
 import ReasonModal from '@/components/admin/ui/ReasonModal';
 import { ListState } from '@/components/admin/ui/AdminPrimitives';
 import { formatDate } from '@/components/admin/useAdminList';
@@ -68,6 +68,14 @@ export default function ApplicationDetailPage({ params }: Readonly<{ params: Pro
 
   const app = store.application;
   const labelOf = (key: string) => changeItems.find((i) => i.key === key)?.label ?? key;
+  // Badges only while a change-request round is open: flagged files are
+  // "Change requested" (waiting) or "Replaced" (back, shown Before / After).
+  const round = store.status === 'pending' ? app?.review_state : null;
+  const statusOf = (doc: ApplicationDocument): DocumentStatus => {
+    if (!round) return null;
+    if (!(app?.change_request_items ?? []).includes(doc.item)) return 'unchanged';
+    return round === 'changes_requested' ? 'requested' : 'replaced';
+  };
 
   return (
     <div className="space-y-6 pb-24">
@@ -88,21 +96,47 @@ export default function ApplicationDetailPage({ params }: Readonly<{ params: Pro
       </header>
 
       {store.status === 'pending' && app?.review_state === 'changes_requested' && (
-        <div className="border-l-2 border-alert bg-alert/5 px-4 py-3 text-sm text-ink">
-          <p>
-            <span className="font-semibold">Changes requested</span>
-            {app.change_requester ? ` by ${app.change_requester.name}` : ''} on {formatDate(app.change_requested_at, true)}. Waiting for the owner
-            {app.update_token_expires_at ? ` — their link works until ${formatDate(app.update_token_expires_at)}` : ''}.
+        <section aria-label="Changes requested" className="border border-amber-200 bg-amber-50/40 px-5 py-4 text-sm text-ink">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <h2 className="text-base font-semibold text-ink">Changes requested</h2>
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800">
+              <Clock size={14} aria-hidden="true" /> Waiting on owner
+            </span>
+          </div>
+          <p className="mt-1 text-ink-muted">
+            {app.change_requester ? `By ${app.change_requester.name} · ` : ''}
+            <time dateTime={app.change_requested_at ?? undefined}>{formatDate(app.change_requested_at, true)}</time>
           </p>
-          <p className="mt-1 text-ink-muted">Asked for: {(app.change_request_items ?? []).map(labelOf).join(', ')}</p>
-          {app.change_request_note && <p className="mt-1 whitespace-pre-line text-ink-muted">“{app.change_request_note}”</p>}
-        </div>
+          {app.update_token_expires_at && (
+            <p className="mt-0.5 text-xs text-ink-muted">The owner&rsquo;s update link works until {formatDate(app.update_token_expires_at)}.</p>
+          )}
+
+          <p className="mt-4 text-xs font-medium text-ink-muted">Asked to redo</p>
+          <ul className="mt-1.5 flex flex-wrap gap-1.5">
+            {(app.change_request_items ?? []).map((key) => (
+              <li key={key} className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">{labelOf(key)}</li>
+            ))}
+          </ul>
+
+          {app.change_request_note && (
+            <blockquote className="mt-4 whitespace-pre-line rounded-r border-l-4 border-amber-400 bg-amber-50/50 py-1 pl-3 italic text-ink-body">
+              {app.change_request_note}
+            </blockquote>
+          )}
+        </section>
       )}
       {store.status === 'pending' && app?.review_state === 'resubmitted' && (
-        <div className="border-l-2 border-sage bg-sage/5 px-4 py-3 text-sm text-ink">
-          <p><span className="font-semibold">The owner sent their updates</span> on {formatDate(app.resubmitted_at, true)}.</p>
-          <p className="mt-1 text-ink-muted">Updated: {(app.change_request_items ?? []).map(labelOf).join(', ')}. Check these below, then approve, reject or ask again.</p>
-        </div>
+        <section aria-label="Owner updates" className="border border-emerald-200 bg-emerald-50/40 px-5 py-4 text-sm text-ink">
+          <h2 className="text-base font-semibold text-ink">The owner sent their updates</h2>
+          <p className="mt-1 text-ink-muted">
+            <time dateTime={app.resubmitted_at ?? undefined}>{formatDate(app.resubmitted_at, true)}</time> · Compare each change below, then approve, deny or ask again.
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-1.5">
+            {(app.change_request_items ?? []).map((key) => (
+              <li key={key} className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">{labelOf(key)}</li>
+            ))}
+          </ul>
+        </section>
       )}
       {manualLink && (
         <div className="border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-ink">
@@ -134,7 +168,7 @@ export default function ApplicationDetailPage({ params }: Readonly<{ params: Pro
           <p className="text-sm text-ink-muted">This shop was created before shop applications existed, so it has no documents on file.</p>
         ) : (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-            {documents.map((doc) => <DocumentTile key={doc.key} storeId={store.id} storeName={store.name} doc={doc} />)}
+            {documents.map((doc) => <DocumentTile key={doc.key} storeId={store.id} storeName={store.name} doc={doc} status={statusOf(doc)} />)}
           </div>
         )}
       </section>

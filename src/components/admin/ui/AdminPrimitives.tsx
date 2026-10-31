@@ -5,10 +5,12 @@ import type { PageMeta } from '../useAdminList';
 
 export function StatCard({ label, value, hint }: { readonly label: string; readonly value: React.ReactNode; readonly hint?: string }) {
   return (
-    <div className="border-2 border-line-strong bg-surface p-5">
+    // h-full + flex column: every card in a grid row is the same height, and
+    // the hint sits on the bottom edge however long the label or hint is.
+    <div className="flex h-full flex-col border-2 border-line-strong bg-surface p-5">
       <p className="text-eyebrow">{label}</p>
       <p className="mt-2 text-3xl font-bold text-ink">{value}</p>
-      {hint && <p className="mt-1 text-sm text-ink-muted">{hint}</p>}
+      {hint && <p className="mt-auto pt-1 text-sm text-ink-muted">{hint}</p>}
     </div>
   );
 }

@@ -130,7 +130,7 @@ export default function LocationPicker({
               <Marker
                 key={`store-${st.id}-${st.slug}`}
                 position={[st.latitude, st.longitude]}
-                icon={buildStorePinIcon(st.logoPath, st.isMain, st.isOpen)}
+                icon={buildStorePinIcon(st.logoPath, st.isMain, st.isOpen, false, false, st.name)}
                 eventHandlers={{
                   click: () => state.handleSelectStore(st),
                 }}

@@ -16,8 +16,15 @@ export interface Staff {
   branch?: { id: number; name: string } | null;
 }
 
+// Shown names that differ from the stored key (keys stay as they are).
+const ROLE_LABELS: Record<string, string> = {
+  quality_control: 'Quality Checker',
+  senior_designer: 'Designer',
+};
+
 /** Turns a raw role value (e.g. "head_tailor") into a display label ("Head Tailor"). */
 export function roleLabel(role: string): string {
+  if (ROLE_LABELS[role]) return ROLE_LABELS[role];
   return role
     .split('_')
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))

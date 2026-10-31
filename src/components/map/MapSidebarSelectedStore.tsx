@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { MapPin, X, Check, Navigation, ArrowLeft, ExternalLink } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
-import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
+import { pinName, type DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
 import type { SavedLocation } from '@/lib/customerLocation';
 
 interface MapSidebarSelectedStoreProps {
@@ -72,7 +72,7 @@ export default function MapSidebarSelectedStore({
               href={gate(`/store/${branch.storeSlug}`)}
               className="font-bold text-sm text-ink hover:text-taupe transition-colors inline-flex items-center gap-1"
             >
-              {branch.storeName}
+              {pinName(branch)}
               <ExternalLink size={12} className="text-ink-faint" />
             </Link>
           </div>

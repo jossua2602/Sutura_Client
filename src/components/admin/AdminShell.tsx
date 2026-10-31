@@ -10,6 +10,7 @@ import { useAdminNotificationStore } from '@/store/useAdminNotificationStore';
 import { ADMIN_NAV, isActiveAdminPath } from './adminNav';
 import SignOutConfirmModal from './SignOutConfirmModal';
 import AdminNotificationBell from './AdminNotificationBell';
+import AdminNotificationToasts from './AdminNotificationToasts';
 import SuturaLogo from '@/components/brand/SuturaLogo';
 
 /**
@@ -46,6 +47,14 @@ export default function AdminShell({ children }: { readonly children: React.Reac
 
     void fetchNotifications();
   }, [hydrated, token, router, clear, fetchNotifications]);
+
+  // One poll for the whole console (both bells and the toasts read the same
+  // store): new platform alerts surface within 15s, same pace as the shop bell.
+  useEffect(() => {
+    if (!hydrated || !token) return;
+    const interval = setInterval(() => { void fetchNotifications(); }, 15_000);
+    return () => clearInterval(interval);
+  }, [hydrated, token, fetchNotifications]);
 
   useEffect(() => setDrawerOpen(false), [pathname]);
 
@@ -124,6 +133,7 @@ export default function AdminShell({ children }: { readonly children: React.Reac
       )}
 
       <SignOutConfirmModal isOpen={confirmSignOut} onClose={() => setConfirmSignOut(false)} onConfirm={signOut} />
+      <AdminNotificationToasts />
 
       {/* Main Content Area with Desktop Sticky Header */}
       <div className="flex-1 min-w-0 flex flex-col min-h-dvh">

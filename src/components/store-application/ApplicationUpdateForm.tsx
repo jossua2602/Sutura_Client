@@ -227,7 +227,7 @@ export default function ApplicationUpdateForm({ token }: { readonly token: strin
         <fieldset className="space-y-5">
           <legend className="mobile-h3 text-ink mb-4">Payment</legend>
           <div className="flex gap-2">
-            {(['gcash', 'bank_transfer'] as const).map((m) => (
+            {(['gcash'] as const).map((m) => (
               <button key={m} type="button" aria-pressed={paymentMethod === m} onClick={() => setPaymentMethod(m)}
                 className={`min-h-11 flex-1 border px-4 text-sm ${paymentMethod === m ? 'border-ink bg-ink text-white' : 'border-line-strong bg-surface text-ink hover:border-ink'}`}>
                 {m === 'gcash' ? 'GCash' : 'Bank Transfer'}

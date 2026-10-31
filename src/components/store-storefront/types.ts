@@ -12,6 +12,7 @@ export interface StoreBranch {
   guide_image_url?: string | null;
   is_main?: boolean | number;
   landmark?: string | null;
+  landmark_image_url?: string | null;
   status?: string;
 }
 

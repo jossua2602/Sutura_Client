@@ -1,24 +1,23 @@
 import React from 'react';
-import { Banknote, Smartphone, CreditCard } from 'lucide-react';
+import { Banknote, Smartphone } from 'lucide-react';
 
 interface CashierMethodSelectorProps {
   readonly method: string;
   readonly setMethod: (method: string) => void;
 }
 
+// The shop collects job payments by cash or GCash only (the API refuses
+// any other method on this desk).
 const CHANNELS = [
   { key: 'cash', label: 'Cash', icon: Banknote },
   { key: 'gcash', label: 'GCash', icon: Smartphone },
-  { key: 'paymaya', label: 'Maya', icon: CreditCard },
-  { key: 'bank_transfer', label: 'Bank', icon: CreditCard },
-  { key: 'other', label: 'Other', icon: CreditCard },
 ];
 
 export function CashierMethodSelector({ method, setMethod }: CashierMethodSelectorProps) {
   return (
     <div className="space-y-1.5">
       <span className="text-xs font-bold uppercase tracking-wider text-ink-muted block">Payment Channel</span>
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 gap-3">
         {CHANNELS.map(m => {
           const isSelected = method === m.key;
           const Icon = m.icon;

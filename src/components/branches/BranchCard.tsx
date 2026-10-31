@@ -49,10 +49,10 @@ export default function BranchCard({ branch, onEdit, onDelete, onSetMain }: Read
                 <h3 className="font-bold text-ink leading-tight truncate">{branch.name}</h3>
                 {branch.is_main ? (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold text-taupe uppercase tracking-wider mt-0.5">
-                    <Star size={10} className="fill-taupe" /> Primary Headquarters
+                    <Star size={10} className="fill-taupe" /> Main Shop
                   </span>
                 ) : (
-                  <span className="text-[11px] text-ink-muted mt-0.5 block">Satellite Branch</span>
+                  <span className="text-[11px] text-ink-muted mt-0.5 block">Branch Shop</span>
                 )}
               </div>
             </div>

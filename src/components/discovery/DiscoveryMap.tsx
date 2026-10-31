@@ -23,16 +23,25 @@ const FALLBACK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height=
 // + "MAIN" badge marks a store's main branch versus a satellite branch.
 // `selected` (Find a Branch's chosen branch): taupe ring, drawn a size up.
 // Main store vs branch, told apart at a glance: main = larger pin with a
-// deep-brown ring and a solid MAIN tag; branch = standard pin with a taupe
-// ring and a light BRANCH tag. `bounce` plays a one-shot hop (pin-bounce in
+// deep-brown ring and a dark name tag with a small star; branch = standard
+// pin with a taupe ring and a light name tag with a dot. The tag shows the
+// shop's name for a main shop and the branch's own name for a branch
+// (pinName), cut to 120px with the full name on hover. `bounce` plays a one-shot hop (pin-bounce in
 // globals.css) when the icon mounts — used for the hovered/selected pin.
 const PIN_THEME = {
-  main: { size: 42, ring: '#2E1C14', tagBg: '#2E1C14', tagFg: '#FFFFFF', tagBorder: '#FFFFFF', tag: 'MAIN' },
-  branch: { size: 36, ring: '#8D7B68', tagBg: '#F3EEE8', tagFg: '#5E4E40', tagBorder: '#8D7B68', tag: 'BRANCH' },
+  main: { size: 42, ring: '#2E1C14', tagBg: '#2E1C14', tagFg: '#FFFFFF', tagBorder: '#FFFFFF', tag: 'Main shop' },
+  branch: { size: 36, ring: '#8D7B68', tagBg: '#F3EEE8', tagFg: '#5E4E40', tagBorder: '#8D7B68', tag: 'Branch' },
 } as const;
 
-export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOpen?: boolean, selected = false, bounce = false): L.DivIcon {
+// Shop and branch names are typed in by owners and go into the pin's raw
+// HTML, so they are escaped first.
+const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] ?? c);
+const STAR_SVG = '<svg width="8" height="8" viewBox="0 0 24 24" fill="#D9A441" aria-hidden="true" style="flex-shrink:0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+const DOT_HTML = '<span aria-hidden="true" style="flex-shrink:0;width:5px;height:5px;border-radius:50%;background:#8D7B68"></span>';
+
+export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOpen?: boolean, selected = false, bounce = false, label?: string): L.DivIcon {
   const t = PIN_THEME[isMain ? 'main' : 'branch'];
+  const name = escapeHtml((label ?? '').trim() || t.tag);
   const tail = 11;
   const h = t.size + tail;
   const statusColor = isOpen ? '#22c55e' : '#ef4444';
@@ -52,7 +61,7 @@ export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOp
         </div>
         <div style="position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:${tail - 1}px solid ${t.ring};"></div>
         <span style="position:absolute;bottom:${tail}px;right:-2px;width:12px;height:12px;border-radius:50%;background:${statusColor};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.35);z-index:10;" title="${isOpen ? 'Open now' : 'Closed now'}"></span>
-        <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;background:${t.tagBg};color:${t.tagFg};font:700 8px/1 var(--font-outfit),system-ui,sans-serif;letter-spacing:0.06em;padding:3px 5px;border-radius:9999px;border:1.5px solid ${t.tagBorder};box-shadow:0 1px 3px rgba(0,0,0,0.25);z-index:11;">${t.tag}</span>
+        <span title="${name}" style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:3px;max-width:120px;white-space:nowrap;background:${t.tagBg};color:${t.tagFg};font:700 9px/1 var(--font-outfit),system-ui,sans-serif;padding:3px 6px;border-radius:9999px;border:1.5px solid ${t.tagBorder};box-shadow:0 1px 3px rgba(0,0,0,0.25);z-index:11;">${isMain ? STAR_SVG : DOT_HTML}<span style="overflow:hidden;text-overflow:ellipsis;">${name}</span></span>
       </div>
     </div>
   `;
@@ -193,11 +202,11 @@ function ClusteredBranchMarkers({ branches, selectedKey, highlightKey, onSelect 
     : null;
   // Built once per pin, not per pan/zoom re-render, so the bounce plays once.
   const selectedIcon = useMemo(
-    () => (selected ? buildStorePinIcon(selected.storeLogoPath, selected.isMain, selected.isOpen, true, true) : null),
+    () => (selected ? buildStorePinIcon(selected.storeLogoPath, selected.isMain, selected.isOpen, true, true, pinName(selected)) : null),
     [selected],
   );
   const highlightedIcon = useMemo(
-    () => (highlighted ? buildStorePinIcon(highlighted.storeLogoPath, highlighted.isMain, highlighted.isOpen, false, true) : null),
+    () => (highlighted ? buildStorePinIcon(highlighted.storeLogoPath, highlighted.isMain, highlighted.isOpen, false, true, pinName(highlighted)) : null),
     [highlighted],
   );
 
@@ -210,8 +219,8 @@ function ClusteredBranchMarkers({ branches, selectedKey, highlightKey, onSelect 
             <Marker
               key={`${b.storeSlug}-${b.branchId}`}
               position={[b.latitude, b.longitude]}
-              icon={buildStorePinIcon(b.storeLogoPath, b.isMain, b.isOpen)}
-              title={b.storeName}
+              icon={buildStorePinIcon(b.storeLogoPath, b.isMain, b.isOpen, false, false, pinName(b))}
+              title={pinName(b)}
               eventHandlers={{ click: () => onSelect(b) }}
             />
           );
@@ -240,7 +249,7 @@ function ClusteredBranchMarkers({ branches, selectedKey, highlightKey, onSelect 
           position={[highlighted.latitude, highlighted.longitude]}
           zIndexOffset={900}
           icon={highlightedIcon}
-          title={highlighted.storeName}
+          title={pinName(highlighted)}
           eventHandlers={{ click: () => onSelect(highlighted) }}
         />
       )}
@@ -249,7 +258,7 @@ function ClusteredBranchMarkers({ branches, selectedKey, highlightKey, onSelect 
           position={[selected.latitude, selected.longitude]}
           zIndexOffset={1000}
           icon={selectedIcon}
-          title={selected.storeName}
+          title={pinName(selected)}
           eventHandlers={{ click: () => onSelect(selected) }}
         />
       )}
@@ -297,6 +306,11 @@ function MapEventsHandler({
     },
   });
   return null;
+}
+
+/** A pin's name: the shop's name for its Main Shop, the branch's own name for a Branch Shop. */
+export function pinName(b: Pick<DiscoveryMapBranch, 'isMain' | 'storeName' | 'branchName'>): string {
+  return b.isMain ? b.storeName : (b.branchName || b.storeName);
 }
 
 export interface DiscoveryMapBranch {
@@ -404,15 +418,15 @@ export default function DiscoveryMap({
             <Marker
               key={key}
               position={[b.latitude, b.longitude]}
-              icon={buildStorePinIcon(b.storeLogoPath, b.isMain, b.isOpen)}
+              icon={buildStorePinIcon(b.storeLogoPath, b.isMain, b.isOpen, false, false, pinName(b))}
               eventHandlers={onSelectBranch ? { click: () => onSelectBranch(b) } : undefined}
             >
               {!onSelectBranch && (
                 <Popup>
-                  <strong>{b.storeName}</strong>
+                  <strong>{pinName(b)}</strong>
                   {' '}
                   <span style={{ fontSize: '11px', color: '#2D2A26', fontWeight: 700 }}>
-                    {b.isMain ? '(Main Branch)' : `(${b.branchName})`}
+                    {b.isMain ? '(Main Shop)' : `· ${b.storeName}`}
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', margin: '3px 0', fontSize: '11px', fontWeight: 600, color: b.isOpen ? '#16a34a' : '#dc2626' }}>
                     <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.isOpen ? '#22c55e' : '#ef4444', display: 'inline-block' }} />

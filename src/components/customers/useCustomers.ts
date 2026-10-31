@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import { useBranch } from '@/context/BranchContext';
 import { CustomerData } from './customerTypes';
 import { isWalkInCustomer, isWalkInEmail } from './customerHelpers';
 
@@ -27,6 +28,7 @@ export function useCustomers() {
   // "My customers": only those with an appointment assigned to me or a job I'm on (staff).
   const [mineOnly, setMineOnly] = useState(false);
   const roleNames = user?.roles?.map((r) => r.name) ?? [];
+  const { selectedBranchId } = useBranch();
   const isPlainStaff = roleNames.includes('staff') && !roleNames.some((r) => ['store_owner', 'branch_manager'].includes(r));
   const [filterType, setFilterType] = useState<'all' | 'online' | 'walkin' | 'b2b_suki' | 'reseller' | 'walk_in_retail'>('all');
 
@@ -37,7 +39,9 @@ export function useCustomers() {
     }
 
     let active = true;
-    api.get(`/stores/${store.id}/customers`, { params: mineOnly ? { mine: 1 } : {} })
+    // Only the selected branch's customers (none = All Branches).
+    const params = { ...(mineOnly ? { mine: 1 } : {}), ...(selectedBranchId !== null ? { branch_id: selectedBranchId } : {}) };
+    api.get(`/stores/${store.id}/customers`, { params })
       .then(res => {
         if (active) {
           setCustomers(res.data.data);
@@ -54,7 +58,7 @@ export function useCustomers() {
     return () => {
       active = false;
     };
-  }, [store, user, mineOnly]);
+  }, [store, user, mineOnly, selectedBranchId]);
 
   const handleAddCustomer = async (e: React.SyntheticEvent) => {
     e.preventDefault();

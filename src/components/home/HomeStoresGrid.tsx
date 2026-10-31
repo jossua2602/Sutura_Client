@@ -176,7 +176,9 @@ export default function HomeStoresGrid({ location }: { readonly location: SavedL
               <button type="button" aria-pressed={specialization === ''} onClick={() => setSpecialization('')} className={chip(specialization === '')}>
                 <Store size={13} aria-hidden="true" /> All shops
               </button>
-              {STORE_SPECIALIZATIONS.map((s) => (
+              {/* Specialty services only: the Men's / Women's / Children's Apparel
+                  chips are left out of this filter (shops still declare them). */}
+              {STORE_SPECIALIZATIONS.filter((s) => s.group !== 'Apparel').map((s) => (
                 <button key={s.value} type="button" aria-pressed={specialization === s.value}
                   onClick={() => setSpecialization(specialization === s.value ? '' : s.value)} className={chip(specialization === s.value)}>
                   {s.label}

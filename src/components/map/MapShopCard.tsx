@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { MapPin, Star, Store } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { specializationLabel } from '@/lib/storeSpecializations';
-import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
+import { pinName, type DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
 
 const fmtKm = (km: number) => (km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`);
 
@@ -44,7 +44,7 @@ export default function MapShopCard({ branch, active, onSelect, onHover }: {
       <span className="min-w-0 flex-1">
         <span className="flex items-start justify-between gap-2">
           <span className="flex min-w-0 items-center gap-1.5">
-            <span className="min-w-0 truncate text-[15px] font-semibold leading-snug text-ink">{branch.storeName}</span>
+            <span className="min-w-0 truncate text-[15px] font-semibold leading-snug text-ink">{pinName(branch)}</span>
             {/* Same colours as the map pins: deep brown = main store, taupe = branch. */}
             <span
               className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
@@ -65,7 +65,7 @@ export default function MapShopCard({ branch, active, onSelect, onHover }: {
           </span>
         </span>
         <span className="mt-0.5 block truncate text-xs text-ink-muted">
-          {branch.isMain ? '' : `${branch.branchName} · `}{place}
+          {branch.isMain ? '' : `${branch.storeName} · `}{place}
         </span>
         <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-body">
           {branch.distanceKm != null && (

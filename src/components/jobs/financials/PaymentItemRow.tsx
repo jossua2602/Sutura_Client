@@ -152,7 +152,6 @@ export function PaymentItemRow({
             >
               <option value="cash">Cash</option>
               <option value="gcash">GCash</option>
-              <option value="paymaya">PayMaya</option>
             </select>
             {editMethod !== 'cash' && (
               <input

@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useJobCreateForm } from './form/useJobCreateForm';
+import { useBranch } from '@/context/BranchContext';
 import JobOrderWizardStepper from './wizard/JobOrderWizardStepper';
 import Step1CustomerInfo from './wizard/Step1CustomerInfo';
 import Step2Measurements, { IndividualMeasurements } from './wizard/Step2Measurements';
@@ -105,11 +106,18 @@ export default function JobCreateForm() {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [assignedStaffId, setAssignedStaffId] = useState<string>('');
 
-  // Fetch shop staff directory for tailor assignment
+  // The branch this order belongs to: the one picked in the switcher, or the
+  // Main Shop under "All Branches" (where the server files it anyway).
+  const { selectedBranchId, branches } = useBranch();
+  const orderBranchId = selectedBranchId ?? branches.find(b => b.is_main)?.id ?? null;
+
+  // Fetch the staff who can take this order: that branch's own staff plus
+  // anyone with no branch (works across all branches). Staff of other
+  // branches, e.g. a branch's manager, never show here.
   useEffect(() => {
     if (!store?.id) return;
     api
-      .get(`/stores/${store.id}/staff`)
+      .get(`/stores/${store.id}/staff`, { params: orderBranchId ? { branch_id: orderBranchId, include_floating: 1 } : {} })
       .then((res) => {
         const list = Array.isArray(res.data?.data) ? res.data.data : [];
         setStaffList(list.filter((s: Staff) => s.is_active !== false));
@@ -117,7 +125,7 @@ export default function JobCreateForm() {
       .catch((err) => {
         console.warn('Could not load staff directory for job creation:', err);
       });
-  }, [store?.id]);
+  }, [store?.id, orderBranchId]);
 
   // Step 4: Invoice & Payment
   const [itemRate, setItemRate] = useState<string>('');
@@ -356,6 +364,7 @@ export default function JobCreateForm() {
       await api.post(`/stores/${store.id}/jobs`, {
         intake_channel: effectiveIntakeChannel,
         fulfillment_type: 'pickup',
+        store_branch_id: orderBranchId ?? undefined,
         customer_id: finalCustomerId,
         service_id: formData.service_id,
         assigned_staff_id: assignedStaffId ? Number(assignedStaffId) : null,

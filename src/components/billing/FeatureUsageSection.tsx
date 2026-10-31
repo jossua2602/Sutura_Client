@@ -18,7 +18,7 @@ export default function FeatureUsageSection({
         <TrendingUp size={12} /> Feature Usage
       </p>
       <div className="bg-surface border border-line rounded-2xl p-6 space-y-5">
-        <UsageBar label="Branches" used={usageCounts.branches} max={limits.branches} icon={Building2} />
+        <UsageBar label="Branch Shops" used={usageCounts.branches} max={limits.branches} icon={Building2} />
         <UsageBar label="Staff Accounts" used={usageCounts.staff} max={limits.staff} icon={Users} />
         <UsageBar label="Services" used={usageCounts.services} max={limits.services} icon={Scissors} />
         {activePlanSlug !== 'premium' && (

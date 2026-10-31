@@ -10,7 +10,7 @@ interface BranchListViewProps {
   readonly onAddClick?: () => void;
   /** The plan's branch limit is reached (admin Plans page): adding more needs an upgrade. */
   readonly addLocked?: boolean;
-  /** e.g. "Your plan allows 1 branch." */
+  /** e.g. "Your plan allows 1 branch shop besides your main shop." */
   readonly lockedText?: string;
   readonly onEdit: (branch: StoreBranch) => void;
   readonly onDelete?: (id: number) => void;
@@ -36,7 +36,7 @@ export default function BranchListView({
         </div>
         <h3 className="text-lg font-semibold text-ink mb-2">No Branches Yet</h3>
         <p className="text-ink-muted text-sm mb-6 max-w-sm mx-auto">
-          Add your first branch location. It will serve as your primary headquarters and appear on the customer discovery map.
+          Add your first location. It becomes your Main Shop and appears on the customer discovery map.
         </p>
         {onAddClick && (
           <button
@@ -44,7 +44,7 @@ export default function BranchListView({
             className="inline-flex items-center gap-2 bg-taupe hover:bg-taupe/90 text-white px-5 py-2.5 rounded-lg font-medium transition-colors text-sm"
           >
             <Plus size={18} />
-            Add Main Branch
+            Add Main Shop
           </button>
         )}
       </div>
@@ -52,6 +52,8 @@ export default function BranchListView({
   }
 
   const mainBranch = safeBranches.find(b => b.is_main) || safeBranches[0];
+  // Branch Shops: every location except the Main Shop. Only these count as
+  // branches (and toward the plan's limit); the Main Shop never does.
   const satelliteBranches = safeBranches.filter(b => b.id !== mainBranch?.id);
 
   return (
@@ -74,8 +76,8 @@ export default function BranchListView({
             <Building2 className="w-5 h-5 text-taupe" />
           </div>
           <div>
-            <div className="text-xl font-bold text-ink">{safeBranches.length}</div>
-            <div className="text-xs text-ink-muted">Total Network Branches</div>
+            <div className="text-xl font-bold text-ink">{satelliteBranches.length}</div>
+            <div className="text-xs text-ink-muted">{satelliteBranches.length === 1 ? 'Branch Shop' : 'Branch Shops'}</div>
           </div>
         </div>
         <div className="bg-surface border border-line rounded-xl p-4 flex items-center gap-3">
@@ -91,7 +93,7 @@ export default function BranchListView({
         </div>
       </div>
 
-      {/* 🌟 TIER 1: Primary Headquarters (Main Branch) */}
+      {/* Main Shop */}
       {mainBranch && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -100,8 +102,8 @@ export default function BranchListView({
                 <Star size={16} className="fill-amber-500 text-amber-600" />
               </span>
               <div>
-                <h2 className="text-base font-bold text-ink">Primary Headquarters / Main Atelier</h2>
-                <p className="text-xs text-ink-muted">The flagship hub where administrative records, master stock, and default appointments are rooted.</p>
+                <h2 className="text-base font-bold text-ink">Main Shop</h2>
+                <p className="text-xs text-ink-muted">Your primary location. It doesn&rsquo;t count toward your plan&rsquo;s branch limit.</p>
               </div>
             </div>
           </div>
@@ -119,7 +121,7 @@ export default function BranchListView({
         </div>
       )}
 
-      {/* 🏢 TIER 2: Satellite Network (Companion Branches / Mga Kasama Niya) */}
+      {/* Branch Shops */}
       <div className="space-y-4 pt-2 border-t border-line">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -128,12 +130,12 @@ export default function BranchListView({
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-ink">Satellite Branches & Companion Locations</h2>
+                <h2 className="text-base font-bold text-ink">Branch Shop</h2>
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-sunken text-ink-muted border border-line">
-                  {satelliteBranches.length} {satelliteBranches.length === 1 ? 'Location' : 'Locations'}
+                  {satelliteBranches.length} {satelliteBranches.length === 1 ? 'Branch Shop' : 'Branch Shops'}
                 </span>
               </div>
-              <p className="text-xs text-ink-muted">Branch locations sharing the shop workspace with designated managers and staff.</p>
+              <p className="text-xs text-ink-muted">Extra locations sharing the shop workspace, each with its own manager and staff.</p>
             </div>
           </div>
 
@@ -150,7 +152,7 @@ export default function BranchListView({
               onClick={onAddClick}
               className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-taupe hover:text-ink px-3 py-1.5 rounded-lg border border-line bg-surface hover:bg-sunken transition-colors"
             >
-              <Plus size={14} /> Add Satellite Branch
+              <Plus size={14} /> Add Branch Shop
             </button>
           ))}
         </div>
@@ -169,7 +171,7 @@ export default function BranchListView({
           </div>
         ) : (
           <div className="bg-surface border border-line rounded-xl p-8 text-center">
-            <p className="text-sm font-medium text-ink mb-1">No Satellite Branches Yet</p>
+            <p className="text-sm font-medium text-ink mb-1">No Branch Shops Yet</p>
             <p className="text-xs text-ink-muted max-w-md mx-auto mb-4">
               Expand your business across multiple locations (e.g. Lanang, Matina, downtown). Each branch gets its own staff roster, job queue, and booking calendar.
               {addLocked && ` ${lockedText} Upgrade your plan to add more.`}
@@ -189,7 +191,7 @@ export default function BranchListView({
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-taupe hover:bg-taupe/90 px-4 py-2 rounded-lg transition-colors"
               >
                 <Plus size={15} />
-                Add Satellite Branch
+                Add Branch Shop
               </button>
             ))}
           </div>

@@ -7,6 +7,7 @@ import { X } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import LoginPortalSwitch, { type LoginPortal } from './LoginPortalSwitch';
+import GoogleSignInButton from './GoogleSignInButton';
 
 interface LoginFormProps {
   // Where a customer lands after signing in. null = stay on the current page
@@ -142,6 +143,18 @@ export default function LoginForm({
           {loading ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
+
+      {/* Google sign-in is for customers only; shop accounts use their shop login. */}
+      {portal === 'customer' && (
+        <>
+          <div className="my-6 flex items-center gap-3" role="separator" aria-label="or">
+            <span className="h-px flex-1 bg-line" />
+            <span className="text-xs font-semibold uppercase tracking-widest text-ink-muted">or</span>
+            <span className="h-px flex-1 bg-line" />
+          </div>
+          <GoogleSignInButton redirectTo={customerRedirect} />
+        </>
+      )}
 
       <p className="mt-6 text-center text-sm text-ink">
         {portal === 'store' ? 'Want to sell on SUTURA?' : <>Don&apos;t have an Account?</>}

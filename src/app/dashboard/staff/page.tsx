@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import { useBranch } from '@/context/BranchContext';
 import PageHeader from '@/components/shared/PageHeader';
 import { Plus } from 'lucide-react';
 import SubscriptionGate from '@/components/SubscriptionGate';
@@ -14,6 +15,7 @@ import StaffListView from '@/components/staff/StaffListView';
 
 export default function StaffPage() {
   const { store, user } = useAuthStore();
+  const { selectedBranchId } = useBranch();
   const toast = useToast();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,8 @@ export default function StaffPage() {
   const fetchStaff = useCallback(() => {
     if (store?.id) {
       api
-        .get(`/stores/${store.id}/staff`)
+        // Only the selected branch's roster (none = All Branches).
+        .get(`/stores/${store.id}/staff`, { params: selectedBranchId !== null ? { branch_id: selectedBranchId } : {} })
         .then(res => {
           const rawStaff = Array.isArray(res.data?.data)
             ? res.data.data
@@ -60,7 +63,7 @@ export default function StaffPage() {
       setStaff([]);
       setTimeout(() => setLoading(false), 0);
     }
-  }, [store, user]);
+  }, [store, user, selectedBranchId]);
 
   // Initial load + live refresh every 30 s so statuses stay current
   useEffect(() => {

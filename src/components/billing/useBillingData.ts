@@ -55,7 +55,10 @@ export function useBillingData() {
       api.get(`/stores/${store.id}/services`),
     ]).then(([branchRes, staffRes, servicesRes]) => {
       setUsageCounts({
-        branches: branchRes.status === 'fulfilled' ? (branchRes.value.data.data?.length ?? 0) : 0,
+        // Branch Shops only: the Main Shop never counts toward the plan.
+        branches: branchRes.status === 'fulfilled'
+          ? ((branchRes.value.data.data ?? []) as { is_main?: boolean }[]).filter((b) => !b.is_main).length
+          : 0,
         staff: staffRes.status === 'fulfilled' ? (staffRes.value.data.data?.length ?? 0) : 0,
         services: servicesRes.status === 'fulfilled' ? (servicesRes.value.data.data?.length ?? 0) : 0,
       });
@@ -109,9 +112,13 @@ export function useBillingData() {
   const activePlanSlug = currentSubscription?.plan?.slug ?? '';
   const activePlanMaxStaff = currentSubscription?.plan?.max_staff;
   const activePlanMaxServices = currentSubscription?.plan?.max_services;
+  // Live plan limit (admin Plans page), Branch Shops beyond the Main Shop;
+  // a plan saved before it existed falls back to the server's own rule.
+  const activePlanMaxBranches = currentSubscription?.plan?.max_branches
+    ?? (activePlanSlug in BRANCH_LIMITS ? BRANCH_LIMITS[activePlanSlug] : BRANCH_LIMITS.basic);
 
   const limits = {
-    branches: activePlanSlug in BRANCH_LIMITS ? BRANCH_LIMITS[activePlanSlug] : BRANCH_LIMITS.basic,
+    branches: activePlanMaxBranches === -1 ? null : activePlanMaxBranches,
     staff: activePlanMaxStaff === -1 ? null : activePlanMaxStaff ?? null,
     services: activePlanMaxServices === -1 ? null : activePlanMaxServices ?? null,
   };

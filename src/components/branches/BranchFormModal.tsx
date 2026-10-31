@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Info, Loader2, X, Lock, MapPinned, MapPin, CheckCircle2 } from 'lucide-react';
+import { Info, Loader2, X, Lock, MapPinned, MapPin, CheckCircle2, ImagePlus } from 'lucide-react';
 import Link from 'next/link';
 import Modal from '@/components/Modal';
 import api from '@/lib/axios';
-import { DAVAO_DISTRICTS, BranchFormData } from '@/components/branches/branchHelpers';
+import { DAVAO_DISTRICTS, BranchFormData, NEW_MANAGER } from '@/components/branches/branchHelpers';
+import { ROLE_OPTIONS } from '@/components/staff/StaffFormModal';
 import type { SavedLocation } from '@/lib/customerLocation';
 import { getErrorMessage } from '@/lib/apiError';
 
@@ -34,6 +35,23 @@ export default function BranchFormModal({
   setFormData,
 }: BranchFormModalProps) {
   const [uploading, setUploading] = useState(false);
+  const [uploadingLandmark, setUploadingLandmark] = useState(false);
+
+  // Shared by the guide and landmark photos: upload, then keep its URL.
+  const uploadImage = async (file: File, field: 'guide_image_url' | 'landmark_image_url', setBusy: (busy: boolean) => void) => {
+    if (!storeId) return;
+    setBusy(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await api.post(`/stores/${storeId}/upload`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setFormData(prev => ({ ...prev, [field]: res.data.data.url }));
+    } catch (err) {
+      alert(getErrorMessage(err, 'Failed to upload image. File may be too large.'));
+    } finally {
+      setBusy(false);
+    }
+  };
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [staffList, setStaffList] = useState<Array<{ id: number; role: string; user?: { name: string; email: string } }>>([]);
   const [mapsLinkInput, setMapsLinkInput] = useState('');
@@ -156,6 +174,37 @@ export default function BranchFormModal({
             onChange={e => setFormData(prev => ({ ...prev, landmark: e.target.value }))}
             className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
           />
+          {/* Landmark photo: helps customers spot it on the way. */}
+          {formData.landmark_image_url ? (
+            <div className="relative mt-2 aspect-video max-w-xs overflow-hidden rounded-lg border border-line bg-canvas">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={formData.landmark_image_url} alt="Landmark" className="h-full w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, landmark_image_url: '' }))}
+                aria-label="Remove landmark photo"
+                className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/85"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <label className={`mt-2 inline-flex min-h-10 items-center gap-2 rounded-lg border border-dashed border-line px-3 text-xs font-medium text-ink-muted ${uploadingLandmark ? 'cursor-wait' : 'cursor-pointer hover:border-taupe hover:text-ink'}`}>
+              {uploadingLandmark ? <Loader2 size={14} className="animate-spin text-taupe" /> : <ImagePlus size={14} />}
+              {uploadingLandmark ? 'Uploading photo…' : 'Add a landmark photo (optional)'}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                disabled={uploadingLandmark}
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (file) void uploadImage(file, 'landmark_image_url', setUploadingLandmark);
+                }}
+              />
+            </label>
+          )}
         </div>
 
         {/* City & District */}
@@ -201,19 +250,6 @@ export default function BranchFormModal({
             placeholder="e.g. 09123456789"
             value={formData.contact_number}
             onChange={e => setFormData(prev => ({ ...prev, contact_number: e.target.value }))}
-            className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
-          />
-        </div>
-
-        {/* Operating Hours */}
-        <div>
-          <label htmlFor="branch-hours" className="block text-sm font-medium text-ink-body mb-1">Operating Hours</label>
-          <input
-            id="branch-hours"
-            type="text"
-            placeholder="e.g. Mon–Sat 8:00 AM – 6:00 PM"
-            value={formData.operating_hours}
-            onChange={e => setFormData(prev => ({ ...prev, operating_hours: e.target.value }))}
             className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
           />
         </div>
@@ -308,7 +344,10 @@ export default function BranchFormModal({
           <select
             id="branch-manager"
             value={formData.manager_id ?? ''}
-            onChange={e => setFormData(prev => ({ ...prev, manager_id: e.target.value ? Number(e.target.value) : '' }))}
+            onChange={e => {
+              const v = e.target.value;
+              setFormData(prev => ({ ...prev, manager_id: v === NEW_MANAGER ? NEW_MANAGER : v ? Number(v) : '' }));
+            }}
             className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
           >
             <option value="">-- No Branch Manager Assigned --</option>
@@ -317,10 +356,61 @@ export default function BranchFormModal({
                 {member.user?.name || `Staff #${member.id}`} ({member.role?.replace(/_/g, ' ')})
               </option>
             ))}
+            {!editingId && <option value={NEW_MANAGER}>+ Create new staff for this branch</option>}
           </select>
           <p className="text-[11px] text-ink-muted mt-1">
             Assigning a manager establishes supervisory accountability and links staff to this branch.
           </p>
+
+          {formData.manager_id === NEW_MANAGER && (
+            <div className="mt-3 space-y-3 rounded-lg border border-line bg-canvas/60 p-3">
+              <p className="text-xs text-ink-muted">
+                SUTURA makes their login and a temporary password when you add the branch, and shows them to you once.
+              </p>
+              <div>
+                <label htmlFor="new-manager-name" className="block text-sm font-medium text-ink-body mb-1">
+                  Full name <span className="text-red-400">*</span>
+                </label>
+                <input
+                  id="new-manager-name"
+                  required
+                  type="text"
+                  maxLength={191}
+                  placeholder="e.g. Maria Santos"
+                  value={formData.new_manager_name}
+                  onChange={e => setFormData(prev => ({ ...prev, new_manager_name: e.target.value }))}
+                  className="w-full px-4 py-2 bg-surface border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="new-manager-role" className="block text-sm font-medium text-ink-body mb-1">Role</label>
+                  <select
+                    id="new-manager-role"
+                    value={formData.new_manager_role}
+                    onChange={e => setFormData(prev => ({ ...prev, new_manager_role: e.target.value }))}
+                    className="w-full px-4 py-2 bg-surface border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
+                  >
+                    {ROLE_OPTIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="new-manager-phone" className="block text-sm font-medium text-ink-body mb-1">
+                    Phone <span className="text-ink-faint font-normal">(optional)</span>
+                  </label>
+                  <input
+                    id="new-manager-phone"
+                    type="tel"
+                    maxLength={20}
+                    placeholder="e.g. 09123456789"
+                    value={formData.new_manager_phone}
+                    onChange={e => setFormData(prev => ({ ...prev, new_manager_phone: e.target.value }))}
+                    className="w-full px-4 py-2 bg-surface border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Status (only for edit) */}

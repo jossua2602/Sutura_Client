@@ -6,7 +6,12 @@ import { getErrorMessage } from '@/lib/apiError';
 
 export interface ApplicationDocument {
   key: string;
+  /** The Request Changes item that covers this file (permit-0 → "permits"). */
+  item: string;
   type: 'image' | 'pdf';
+  uploaded_at: string | null;
+  /** The version a re-upload replaced, streamed with ?version=previous. */
+  previous: { type: 'image' | 'pdf'; uploaded_at: string | null } | null;
 }
 
 export interface ApplicationDetail {

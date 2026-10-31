@@ -91,7 +91,7 @@ export default function SubscriptionActivityTimeline({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 pb-6 border-b border-line">
         <UsageBar label="Staff" used={data.usage.staff.used} max={data.usage.staff.max === -1 ? null : data.usage.staff.max} icon={Users} />
         <UsageBar label="Services" used={data.usage.services.used} max={data.usage.services.max === -1 ? null : data.usage.services.max} icon={Scissors} />
-        <UsageBar label="Branches" used={data.usage.branches.used} max={data.usage.branches.max === -1 ? null : data.usage.branches.max} icon={Building2} />
+        <UsageBar label="Branch Shops" used={data.usage.branches.used} max={data.usage.branches.max === -1 ? null : data.usage.branches.max} icon={Building2} />
       </div>
 
       {events.length === 0 ? (

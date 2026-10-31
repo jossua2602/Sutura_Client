@@ -175,6 +175,17 @@ export default function JobQuickViewModal({
     )?.user?.name ||
     null;
 
+  // Who can take this job: its branch's staff plus staff with no branch
+  // (they work across all branches). The person already on it stays listed
+  // so the dropdown still shows them. The API refuses anyone else.
+  const jobBranchId = currentJob.store_branch_id ?? null;
+  const assignableStaff = internalStaffList.filter((s) =>
+    !jobBranchId
+    || !s.store_branch_id
+    || s.store_branch_id === jobBranchId
+    || (s.user_id ?? s.user?.id) === currentAssignedStaffId
+  );
+
   const handleStaffChange = async (newStaffUserIdStr: string) => {
     if (!store || !currentJob) return;
     const newStaffUserId = newStaffUserIdStr ? Number(newStaffUserIdStr) : null;
@@ -398,7 +409,7 @@ export default function JobQuickViewModal({
                       className="w-full h-11 px-3.5 bg-surface border border-line rounded-xl text-xs sm:text-sm font-medium text-ink focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs cursor-pointer transition-colors"
                     >
                       <option value="">— Unassigned (Available in Pool) —</option>
-                      {internalStaffList.map((s) => {
+                      {assignableStaff.map((s) => {
                         const sUserId = s.user_id ?? s.user?.id;
                         const sName = s.user?.name || `Tailor #${sUserId}`;
                         const sRole = s.role ? ` (${roleLabel(s.role)})` : '';

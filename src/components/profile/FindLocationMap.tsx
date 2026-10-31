@@ -113,7 +113,7 @@ export default function FindLocationMap({ branches, selectedBranchId, onSelectBr
           <Marker
             key={b.id}
             position={[b.latitude, b.longitude]}
-            icon={buildStorePinIcon(logoPath, !!b.isMain, isOpen, selectedBranchId === b.id)}
+            icon={buildStorePinIcon(logoPath, !!b.isMain, isOpen, selectedBranchId === b.id, false, b.name)}
             title={b.name}
             zIndexOffset={selectedBranchId === b.id ? 1000 : 0}
             eventHandlers={onSelectBranch ? { click: () => onSelectBranch(b.id) } : undefined}

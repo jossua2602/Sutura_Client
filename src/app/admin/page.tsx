@@ -37,10 +37,10 @@ export default function AdminOverviewPage() {
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <StatCard label="Pending applications" value={pending} hint={pending ? 'Waiting for your review' : 'All caught up'} />
-            <Link href="/admin/branches" className="block hover:bg-canvas">
+            <Link href="/admin/branches" className="block h-full hover:bg-canvas">
               <StatCard label="Branches to check" value={data.pending_branches} hint={data.pending_branches ? 'Pins waiting for verification' : 'All caught up'} />
             </Link>
-            <Link href="/admin/apparel" className="block hover:bg-canvas">
+            <Link href="/admin/apparel" className="block h-full hover:bg-canvas">
               <StatCard label="Apparel to review" value={data.pending_apparel_types} hint={data.pending_apparel_types ? 'Typed-in names waiting' : 'All caught up'} />
             </Link>
             <StatCard label="Live shops" value={data.stores.approved ?? 0} hint={`${data.stores.rejected ?? 0} rejected`} />

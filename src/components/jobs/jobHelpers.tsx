@@ -169,6 +169,8 @@ export function columnsForJobs(_jobs: Job[] = []) {
 export interface Job {
   id: number;
   order_number?: string;
+  /** The branch the order belongs to (staff of other branches can't take it). */
+  store_branch_id?: number | null;
   intake_channel: 'walk_in' | 'online';
   fulfillment_type: 'pickup' | 'shipping' | 'delivery';
   status: string;

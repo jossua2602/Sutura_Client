@@ -36,7 +36,7 @@ export default function BranchQuickBar() {
         <button
           type="button"
           onClick={() => setSelectedBranchId(mainBranch.id)}
-          title={`Headquarters: ${mainBranch.name}${mainBranch.job_orders_count ? ` (${mainBranch.job_orders_count} orders)` : ''}`}
+          title={`Main Shop: ${mainBranch.name}${mainBranch.job_orders_count ? ` (${mainBranch.job_orders_count} orders)` : ''}`}
           className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-medium whitespace-nowrap min-h-[28px] cursor-pointer ${
             selectedBranchId === mainBranch.id
               ? 'bg-taupe text-white shadow-xs font-semibold'
@@ -72,7 +72,7 @@ export default function BranchQuickBar() {
             key={branch.id}
             type="button"
             onClick={() => setSelectedBranchId(branch.id)}
-            title={`Satellite: ${branch.name}${branch.job_orders_count ? ` (${branch.job_orders_count} orders)` : ''}`}
+            title={`Branch Shop: ${branch.name}${branch.job_orders_count ? ` (${branch.job_orders_count} orders)` : ''}`}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-medium whitespace-nowrap min-h-[28px] cursor-pointer ${
               isSelected
                 ? 'bg-taupe text-white shadow-xs font-semibold'

@@ -5,7 +5,6 @@ import {
 } from './financials/financialsTypes';
 import { useJobFinancials } from './financials/useJobFinancials';
 import { FinancialStatementSummary } from './financials/FinancialStatementSummary';
-import { FinancialDiscountForm } from './financials/FinancialDiscountForm';
 import { PaymentAuditLedger } from './financials/PaymentAuditLedger';
 import { JobCashierDesk } from './financials/JobCashierDesk';
 
@@ -43,16 +42,6 @@ export default function JobFinancialsCard({
     cancelChargeReview,
     verifyingPaymentId,
     handleVerifyPayment,
-    showDiscountForm,
-    setShowDiscountForm,
-    discountType,
-    setDiscountType,
-    discountInput,
-    setDiscountInput,
-    discountReason,
-    setDiscountReason,
-    applyingDiscount,
-    handleApplyDiscountSubmit,
     editingPaymentId,
     setEditingPaymentId,
     editMethod,
@@ -89,19 +78,6 @@ export default function JobFinancialsCard({
         <div className="lg:col-span-7 space-y-6">
           <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-5">
             <FinancialStatementSummary job={job} financials={financials} />
-            <FinancialDiscountForm
-              financials={financials}
-              showDiscountForm={showDiscountForm}
-              setShowDiscountForm={setShowDiscountForm}
-              discountType={discountType}
-              setDiscountType={setDiscountType}
-              discountInput={discountInput}
-              setDiscountInput={setDiscountInput}
-              discountReason={discountReason}
-              setDiscountReason={setDiscountReason}
-              applyingDiscount={applyingDiscount}
-              onApplyDiscountSubmit={handleApplyDiscountSubmit}
-            />
           </div>
 
           <PaymentAuditLedger

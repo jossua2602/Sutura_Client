@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronsUpDown, Check, Search, Building2, MapPin, Settings, Star } from 'lucide-react';
+import { ChevronsUpDown, Check, Search, Building2, MapPin, Settings, Star, Lock } from 'lucide-react';
 import { useBranch } from '@/context/BranchContext';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
@@ -15,7 +15,7 @@ import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
  */
 export default function StoreSwitcher() {
   const { store } = useAuthStore();
-  const { branches, selectedBranchId, setSelectedBranchId } = useBranch();
+  const { branches, selectedBranchId, setSelectedBranchId, canSwitchBranch } = useBranch();
   const { tier, loading: tierLoading } = useSubscriptionTier();
 
   const [open, setOpen] = useState(false);
@@ -51,19 +51,7 @@ export default function StoreSwitcher() {
   const mainBranch = filtered.find(b => b.is_main);
   const satelliteBranches = filtered.filter(b => !b.is_main);
 
-  return (
-    <div className="relative flex items-center min-w-0 flex-1" ref={ref}>
-      <button
-        type="button"
-        onClick={() => { setOpen(o => !o); setQuery(''); }}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        aria-label="Switch branch location"
-        title={`${store.name} • ${activeBranch ? activeBranch.name : 'All Locations'}`}
-        className={`flex items-center justify-between gap-2 min-w-0 flex-1 px-2.5 py-1.5 rounded-lg transition-colors text-left cursor-pointer ${
-          open ? 'bg-sunken text-ink' : 'hover:bg-sunken text-ink'
-        }`}
-      >
+  const label = (
         <div className="flex flex-col min-w-0 flex-1 leading-tight">
           <span className="text-xs font-bold truncate text-ink">
             {store.name}
@@ -89,6 +77,36 @@ export default function StoreSwitcher() {
             )}
           </div>
         </div>
+  );
+
+  // Branch managers and staff are locked to their assigned branch: no
+  // dropdown, just the shop and branch they work in.
+  if (!canSwitchBranch) {
+    return (
+      <div
+        className="flex items-center justify-between gap-2 min-w-0 flex-1 px-2.5 py-1.5 text-left"
+        title={`${store.name} • ${activeBranch ? activeBranch.name : 'Your branch'} (assigned to your account)`}
+      >
+        {label}
+        <Lock size={12} className="text-ink-faint shrink-0" aria-label="Branch assigned to your account" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex items-center min-w-0 flex-1" ref={ref}>
+      <button
+        type="button"
+        onClick={() => { setOpen(o => !o); setQuery(''); }}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label="Switch branch location"
+        title={`${store.name} • ${activeBranch ? activeBranch.name : 'All Locations'}`}
+        className={`flex items-center justify-between gap-2 min-w-0 flex-1 px-2.5 py-1.5 rounded-lg transition-colors text-left cursor-pointer ${
+          open ? 'bg-sunken text-ink' : 'hover:bg-sunken text-ink'
+        }`}
+      >
+        {label}
         <ChevronsUpDown size={13} className="text-ink-muted shrink-0" />
       </button>
 
@@ -167,7 +185,7 @@ export default function StoreSwitcher() {
             {satelliteBranches.length > 0 && (
               <div className="mt-1 pt-1 border-t border-line/60">
                 <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ink-muted">
-                  Satellite Branches ({satelliteBranches.length})
+                  Branch Shops ({satelliteBranches.length})
                 </div>
                 {satelliteBranches.map(b => (
                   <button

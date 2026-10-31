@@ -22,6 +22,7 @@ export interface StoreBranch {
   name: string;
   address: string;
   landmark?: string | null;
+  landmark_image_url?: string | null;
   barangay?: string | null;
   city: string;
   district?: string | null;
@@ -46,6 +47,7 @@ export interface BranchFormData {
   name: string;
   address: string;
   landmark: string;
+  landmark_image_url: string;
   barangay: string;
   city: string;
   district: string;
@@ -55,13 +57,39 @@ export interface BranchFormData {
   operating_hours: string;
   status: string;
   guide_image_url: string;
+  /** A staff id, '' for none, or NEW_MANAGER to create a staff account. */
   manager_id: string | number;
+  new_manager_name: string;
+  new_manager_phone: string;
+  new_manager_role: string;
+}
+
+/** manager_id value for "Create new staff for this branch". */
+export const NEW_MANAGER = 'new';
+
+/** What the API takes: hours stay on the store profile, and a new manager goes as new_manager. */
+export function branchPayload(form: BranchFormData) {
+  const { operating_hours: _hours, new_manager_name, new_manager_phone, new_manager_role, ...rest } = form;
+  if (form.manager_id !== NEW_MANAGER) return rest;
+  return {
+    ...rest,
+    manager_id: undefined,
+    new_manager: { name: new_manager_name.trim(), phone: new_manager_phone.trim() || null, role: new_manager_role },
+  };
+}
+
+/** Returned once when a branch is added with a new manager (shown, then gone). */
+export interface BranchManagerCredentials {
+  name: string;
+  login_email: string;
+  temporary_password: string;
 }
 
 export const EMPTY_FORM: BranchFormData = {
   name: '',
   address: '',
   landmark: '',
+  landmark_image_url: '',
   barangay: '',
   city: '',
   district: '',
@@ -72,6 +100,9 @@ export const EMPTY_FORM: BranchFormData = {
   status: 'active',
   guide_image_url: '',
   manager_id: '',
+  new_manager_name: '',
+  new_manager_phone: '',
+  new_manager_role: 'tailor',
 };
 
 export function StatusBadge({ status }: Readonly<{ status?: string }>) {

@@ -31,6 +31,8 @@ interface AdminNotificationState {
   counts: AdminPendingCounts;
   loading: boolean;
   error: string | null;
+  /** True once a fetch has succeeded — the toasts' "what was already there" baseline. */
+  fetched: boolean;
   fetchNotifications: () => Promise<void>;
   markAllAsRead: () => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
@@ -49,6 +51,7 @@ export const useAdminNotificationStore = create<AdminNotificationState>((set, ge
   },
   loading: false,
   error: null,
+  fetched: false,
 
   fetchNotifications: async () => {
     try {
@@ -67,6 +70,7 @@ export const useAdminNotificationStore = create<AdminNotificationState>((set, ge
           },
           loading: false,
           error: null,
+          fetched: true,
         });
       }
     } catch {

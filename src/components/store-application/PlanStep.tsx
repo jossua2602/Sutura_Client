@@ -10,9 +10,9 @@ const CYCLES: { value: BillingCycle; label: string }[] = [
   { value: 'monthly', label: 'Monthly' },
   { value: 'yearly', label: 'Yearly' },
 ];
+// Plan payments are GCash only (bank transfer was removed).
 const METHODS: { value: PaymentMethod; label: string }[] = [
   { value: 'gcash', label: 'GCash' },
-  { value: 'bank_transfer', label: 'Bank Transfer' },
 ];
 
 export default function PlanStep({ app }: { readonly app: StoreApplicationState }) {
@@ -65,13 +65,7 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
             ))}
           </div>
         </div>
-        {paymentMethod === 'gcash' ? (
-          <PlatformPaymentBox amount={Number(price)} note="Your plan starts once your shop is approved. After you pay, upload a screenshot of the GCash receipt below." />
-        ) : (
-          <div className="border border-line bg-sunken p-4 mobile-body-sm text-ink-body">
-            Send <strong className="font-semibold text-ink">{formatPeso(price)}</strong> to SUTURA using the account details the SUTURA team gives you, then upload your receipt. Your plan starts once your shop is approved.
-          </div>
-        )}
+        <PlatformPaymentBox amount={Number(price)} note="Your plan starts once your shop is approved. After you pay, upload a screenshot of the GCash receipt below." />
         <FileField id="app-doc-payment_receipt" label="Payment Receipt" hint="Screenshot or photo — JPG, PNG, or WEBP" accept="image/*"
           file={files.payment_receipt} onChange={(file) => setFile('payment_receipt', file)} />
       </div>

@@ -7,14 +7,7 @@ import {
   Bell,
   Check,
   CheckCheck,
-  CreditCard,
   ExternalLink,
-  FileCheck2,
-  LifeBuoy,
-  MapPin,
-  Shirt,
-  Sparkles,
-  Store,
   X,
 } from 'lucide-react';
 import {
@@ -22,6 +15,7 @@ import {
   useAdminNotificationStore,
 } from '@/store/useAdminNotificationStore';
 import { relativeTime } from '@/lib/notificationHelpers';
+import { AdminCategoryIcon, adminCategoryBg } from './adminNotificationStyle';
 
 interface AdminNotificationBellProps {
   variant?: 'light' | 'dark';
@@ -41,14 +35,14 @@ export default function AdminNotificationBell({ variant = 'light' }: AdminNotifi
     markAsRead,
   } = useAdminNotificationStore();
 
-  // Initial fetch and auto-refresh every 30s
+  // Polling lives in AdminShell (once, not per bell). When the unread count
+  // goes up, replay the bell wiggle and the badge bump.
+  const [bump, setBump] = useState(0);
+  const lastCount = useRef<number | null>(null);
   useEffect(() => {
-    void fetchNotifications();
-    const interval = setInterval(() => {
-      void fetchNotifications();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+    if (lastCount.current !== null && unreadCount > lastCount.current) setBump((b) => b + 1);
+    lastCount.current = unreadCount;
+  }, [unreadCount]);
 
   // Refetch when dropdown opens for fresh data
   useEffect(() => {
@@ -96,44 +90,6 @@ export default function AdminNotificationBell({ variant = 'light' }: AdminNotifi
     router.push(item.link);
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'applications':
-        return <Store size={16} className="text-amber-700" />;
-      case 'branches':
-        return <MapPin size={16} className="text-sky-700" />;
-      case 'upgrades':
-        return <CreditCard size={16} className="text-emerald-700" />;
-      case 'subscriptions':
-        return <Sparkles size={16} className="text-purple-700" />;
-      case 'apparel':
-        return <Shirt size={16} className="text-indigo-700" />;
-      case 'support':
-        return <LifeBuoy size={16} className="text-rose-700" />;
-      default:
-        return <FileCheck2 size={16} className="text-taupe" />;
-    }
-  };
-
-  const getCategoryBg = (category: string) => {
-    switch (category) {
-      case 'applications':
-        return 'bg-amber-500/10 border-amber-500/20';
-      case 'branches':
-        return 'bg-sky-500/10 border-sky-500/20';
-      case 'upgrades':
-        return 'bg-emerald-500/10 border-emerald-500/20';
-      case 'subscriptions':
-        return 'bg-purple-500/10 border-purple-500/20';
-      case 'apparel':
-        return 'bg-indigo-500/10 border-indigo-500/20';
-      case 'support':
-        return 'bg-rose-500/10 border-rose-500/20';
-      default:
-        return 'bg-sunken border-line';
-    }
-  };
-
   const buttonStyle =
     variant === 'dark'
       ? 'relative flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 hover:bg-white/15 text-white/90 hover:text-white transition-colors focus:outline-hidden focus:ring-2 focus:ring-taupe'
@@ -150,10 +106,15 @@ export default function AdminNotificationBell({ variant = 'light' }: AdminNotifi
         onClick={() => setOpen((prev) => !prev)}
         className={buttonStyle}
       >
-        <Bell size={18} className={unreadCount > 0 ? 'text-amber-500' : ''} />
+        <Bell
+          key={`bell-${bump}`}
+          size={18}
+          className={unreadCount > 0 ? `text-amber-500${bump > 0 ? ' animate-[wiggle_0.4s_ease-in-out]' : ''}` : ''}
+        />
         {unreadCount > 0 && (
           <span
-            className="absolute -top-1 -right-1 flex min-w-5 h-5 px-1 items-center justify-center rounded-full bg-[#E41E3F] text-white text-[10px] font-bold border-2 border-surface shadow-xs"
+            key={`badge-${bump}`}
+            className={`${bump > 0 ? 'badge-bump ' : ''}absolute -top-1 -right-1 flex min-w-5 h-5 px-1 items-center justify-center rounded-full bg-[#E41E3F] text-white text-[10px] font-bold border-2 border-surface shadow-xs`}
             aria-hidden="true"
           >
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -269,11 +230,11 @@ export default function AdminNotificationBell({ variant = 'light' }: AdminNotifi
                   >
                     {/* Category Icon Badge */}
                     <div
-                      className={`relative shrink-0 mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl border ${getCategoryBg(
+                      className={`relative shrink-0 mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl border ${adminCategoryBg(
                         item.category
                       )}`}
                     >
-                      {getCategoryIcon(item.category)}
+                      <AdminCategoryIcon category={item.category} />
                       {!isRead && (
                         <span
                           className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#E41E3F] border-2 border-surface"

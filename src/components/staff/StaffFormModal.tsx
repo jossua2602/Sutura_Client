@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { X, Loader2, ChevronDown, ChevronRight, Lock } from 'lucide-react';
 import { useBranch } from '@/context/BranchContext';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface StaffFormModalProps {
   readonly isOpen: boolean;
@@ -46,18 +47,16 @@ interface StaffFormModalProps {
   readonly isStoreOwner?: boolean;
 }
 
-const ROLE_OPTIONS = [
+export const ROLE_OPTIONS = [
   { value: 'tailor', label: 'Tailor' },
   { value: 'head_tailor', label: 'Head Tailor' },
   { value: 'cutter', label: 'Cutter' },
   { value: 'seamstress', label: 'Seamstress' },
-  { value: 'designer', label: 'Fashion Designer' },
   { value: 'pattern_maker', label: 'Pattern Maker' },
   { value: 'assistant', label: 'Assistant' },
   { value: 'receptionist', label: 'Receptionist' },
-  { value: 'quality_control', label: 'Quality Control' },
-  { value: 'sublimation_specialist', label: 'Sublimation Specialist' },
-  { value: 'senior_designer', label: 'Senior Designer' },
+  { value: 'quality_control', label: 'Quality Checker' },
+  { value: 'senior_designer', label: 'Designer' },
   { value: 'cutter_sewer', label: 'Cutter/Sewer' },
 ];
 
@@ -72,8 +71,21 @@ export default function StaffFormModal({
   isStoreOwner = false,
 }: StaffFormModalProps) {
   const { branches } = useBranch();
+  const { staffProfile } = useAuthStore();
   const [showPortalSection, setShowPortalSection] = useState(false);
   const emailInputRef = useRef<HTMLInputElement>(null);
+  // Only the owner picks a branch. A branch manager can only add or edit
+  // staff in their own branch (the API refuses any other), so the field is
+  // fixed to it.
+  const lockedBranchId = !isStoreOwner && staffProfile?.store_branch_id ? String(staffProfile.store_branch_id) : null;
+  const lockedBranch = lockedBranchId ? branches.find(b => String(b.id) === lockedBranchId) : undefined;
+
+  useEffect(() => {
+    if (isOpen && lockedBranchId && formData.store_branch_id !== lockedBranchId) {
+      setFormData(prev => ({ ...prev, store_branch_id: lockedBranchId }));
+    }
+  }, [isOpen, lockedBranchId, formData.store_branch_id, setFormData]);
+
   if (!isOpen) return null;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -216,7 +228,7 @@ export default function StaffFormModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="staff_role" className="block text-xs font-bold text-ink uppercase tracking-wider mb-1.5">
-                Primary Craft Role <span className="text-rose-600">*</span>
+                Tailoring Staff Role <span className="text-rose-600">*</span>
               </label>
               <select
                 id="staff_role"
@@ -332,7 +344,16 @@ export default function StaffFormModal({
             <p className="text-[11px] text-ink-muted mt-1">Visible only to shop owner and management.</p>
           </div>
 
-          {branches.length > 0 && (
+          {lockedBranchId ? (
+            <div>
+              <p className="block text-xs font-bold text-ink uppercase tracking-wider mb-1.5">Assigned Atelier Branch</p>
+              <div className="flex items-center justify-between gap-2 px-3.5 py-2 bg-sunken border border-line rounded-xl text-xs font-semibold text-ink">
+                <span className="truncate">{lockedBranch?.name ?? 'Your branch'}</span>
+                <Lock size={13} className="text-ink-muted shrink-0" aria-hidden="true" />
+              </div>
+              <p className="text-[11px] text-ink-muted mt-1">Staff you add join your branch. Only the shop owner can assign other branches.</p>
+            </div>
+          ) : branches.length > 0 && (
             <div>
               <label htmlFor="staff_branch" className="block text-xs font-bold text-ink uppercase tracking-wider mb-1.5">
                 Assigned Atelier Branch {formData.is_branch_manager && <span className="text-rose-600">*</span>}

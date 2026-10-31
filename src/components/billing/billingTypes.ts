@@ -63,9 +63,11 @@ export function getPlanMeta(slug: string) {
   return PLAN_META[slug] ?? PLAN_META.basic;
 }
 
+// Fallback only, for a plan with no max_branches saved (same rule as
+// SubscriptionPlan::branchLimit()): Branch Shops beyond the Main Shop.
 export const BRANCH_LIMITS: Record<string, number | null> = {
-  basic: 1,
-  pro: 1,
+  basic: 0,
+  pro: 0,
   premium: null,
 };
 

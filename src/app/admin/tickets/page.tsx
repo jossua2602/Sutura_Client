@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Badge, { type BadgeVariant } from '@/components/shared/Badge';
 import PageHeader from '@/components/shared/PageHeader';
 import { FilterTabs, ListState } from '@/components/admin/ui/AdminPrimitives';
@@ -30,8 +31,22 @@ const FILTERS = [
 const PRIORITY: Record<string, BadgeVariant> = { high: 'danger', urgent: 'danger', medium: 'warning', low: 'neutral' };
 
 export default function AdminTicketsPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminTickets />
+    </Suspense>
+  );
+}
+
+function AdminTickets() {
   const [status, setStatus] = useState('open');
   const [openId, setOpenId] = useState<number | null>(null);
+  // A notification or toast links here with ?ticket=<id>: open that ticket.
+  const ticketParam = useSearchParams().get('ticket');
+  useEffect(() => {
+    const id = Number(ticketParam);
+    if (id > 0) setOpenId(id);
+  }, [ticketParam]);
   const { items, loading, error, reload } = useAdminList<TicketRow>('/admin/tickets', { status });
 
   return (

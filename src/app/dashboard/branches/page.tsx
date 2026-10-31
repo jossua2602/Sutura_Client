@@ -7,7 +7,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import Link from 'next/link';
 import { Lock, Plus, Map as MapIcon, LayoutGrid } from 'lucide-react';
 import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
-import { StoreBranch, EMPTY_FORM } from '@/components/branches/branchHelpers';
+import { StoreBranch, EMPTY_FORM, branchPayload, type BranchManagerCredentials } from '@/components/branches/branchHelpers';
+import BranchCredentialsModal from '@/components/branches/BranchCredentialsModal';
 import BranchFormModal from '@/components/branches/BranchFormModal';
 import BranchDeleteModal from '@/components/branches/BranchDeleteModal';
 import BranchListView from '@/components/branches/BranchListView';
@@ -36,12 +37,17 @@ export default function BranchesPage() {
   const myBranchId = staffProfile?.store_branch_id ?? null;
   const [branches, setBranches] = useState<StoreBranch[]>([]);
   const [loading, setLoading] = useState(true);
-  // Same rule as StoreBranchController::store(): the plan's branch limit,
-  // set on the admin Plans page (-1 = unlimited). Lock the add buttons up
-  // front instead of letting the owner fill in the whole form to hit a 403.
+  // Same rule as StoreBranchController::store(): the plan's limit counts
+  // Branch Shops only (-1 = unlimited, 0 = main shop only); the Main Shop
+  // never uses it up, and a shop with no locations can always add its Main
+  // Shop. Lock the add buttons up front instead of letting the owner fill in
+  // the whole form to hit a 403.
   const { maxBranches, loading: tierLoading } = useSubscriptionTier();
-  const addLocked = isStoreOwner && !tierLoading && maxBranches !== -1 && branches.length >= maxBranches;
-  const limitText = `Your plan allows ${maxBranches === 1 ? '1 branch' : `up to ${maxBranches} branches`}`;
+  const branchShopCount = branches.filter(b => !b.is_main).length;
+  const addLocked = isStoreOwner && !tierLoading && branches.length > 0 && maxBranches !== -1 && branchShopCount >= maxBranches;
+  const limitText = maxBranches === 0
+    ? 'Your plan includes your main shop only'
+    : `Your plan allows ${maxBranches === 1 ? '1 branch shop' : `up to ${maxBranches} branch shops`} besides your main shop`;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -51,6 +57,7 @@ export default function BranchesPage() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [credentials, setCredentials] = useState<BranchManagerCredentials | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
 
   const fetchBranches = useCallback(() => {
@@ -95,6 +102,7 @@ export default function BranchesPage() {
       name: branch.name,
       address: branch.address,
       landmark: branch.landmark || '',
+      landmark_image_url: branch.landmark_image_url || '',
       barangay: branch.barangay || '',
       city: branch.city,
       district: branch.district || '',
@@ -105,6 +113,9 @@ export default function BranchesPage() {
       status: branch.status || 'active',
       guide_image_url: branch.guide_image_url || '',
       manager_id: branch.manager?.id || '',
+      new_manager_name: '',
+      new_manager_phone: '',
+      new_manager_role: 'tailor',
     });
     setErrorMsg('');
     setIsModalOpen(true);
@@ -125,19 +136,21 @@ export default function BranchesPage() {
 
     try {
       if (editingId) {
-        const res = await api.put(`/stores/${store.id}/branches/${editingId}`, formData);
+        const res = await api.put(`/stores/${store.id}/branches/${editingId}`, branchPayload(formData));
         const updated = res.data?.data;
         if (updated) {
           setBranches(prev => prev.map(b => (b.id === editingId ? { ...b, ...updated } : b)));
         }
         toast.success('Branch details updated successfully.');
       } else {
-        const res = await api.post(`/stores/${store.id}/branches`, formData);
+        const res = await api.post(`/stores/${store.id}/branches`, branchPayload(formData));
         const created = res.data?.data;
         if (created) {
           setBranches(prev => [...prev, created]);
         }
         toast.success('New branch registered successfully.');
+        // A new manager's login is shown once, right now.
+        if (res.data?.credentials) setCredentials(res.data.credentials);
       }
       setIsModalOpen(false);
       setEditingId(null);
@@ -158,7 +171,7 @@ export default function BranchesPage() {
     try {
       const res = await api.put(`/stores/${store.id}/branches/${branch.id}/set-main`);
       if (res.data?.success) {
-        toast.success(`${branch.name} is now designated as the Primary Headquarters.`);
+        toast.success(`${branch.name} is now your Main Shop.`);
         fetchBranches();
         refreshBranches();
       }
@@ -313,6 +326,8 @@ export default function BranchesPage() {
         formData={formData}
         setFormData={setFormData}
       />
+
+      <BranchCredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
 
       {/* Delete Modal */}
       <BranchDeleteModal

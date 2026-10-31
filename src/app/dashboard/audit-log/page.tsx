@@ -80,7 +80,7 @@ const formatPayload = (action: string, rawPayload: Record<string, unknown> | str
     case 'catalog_item_deleted':
       return `${payload.name ?? '—'}`;
     case 'branch_set_main':
-      return `Designated "${payload.name ?? payload.branch_name ?? 'Branch'}" as Primary Headquarters`;
+      return `Designated "${payload.name ?? payload.branch_name ?? 'Branch'}" as the Main Shop`;
     default: {
       if (typeof payload === 'object' && payload !== null) {
         if ('name' in payload && Object.keys(payload).length === 1) {

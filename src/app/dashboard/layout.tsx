@@ -7,13 +7,13 @@ import React, { useEffect, useState } from 'react';
 import { MessageSquare,
   LayoutDashboard, Scissors, UserCog, Package, Users, Building2,
   Calendar, Home, CreditCard,
-  Sparkles, ScrollText, X, HelpCircle, LayoutGrid,
+  Sparkles, ScrollText, X, HelpCircle, LayoutGrid, PackageCheck,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import AccountHeaderMenu from '@/components/AccountHeaderMenu';
 import BrandLogo from '@/components/BrandLogo';
 import { ToastProvider } from '@/context/ToastContext';
-import { BranchProvider } from '@/context/BranchContext';
+import { BranchProvider, useBranch } from '@/context/BranchContext';
 import WhatsNewTour, { hasSeenLatestWhatsNew } from '@/components/WhatsNewTour';
 import StoreSwitcher from '@/components/shell/StoreSwitcher';
 import SidebarControl, { type SidebarMode } from '@/components/shell/SidebarControl';
@@ -26,6 +26,7 @@ const SIDEBAR_KEY = 'sutura.sidebar';
 
 function DashboardLayoutContent({ children }: { readonly children: React.ReactNode }) {
   const { user, isAuthenticated, logout, setAuth, token, staffProfile, store } = useAuthStore();
+  const { selectedBranchId } = useBranch();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -145,6 +146,8 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
       title: 'Workroom',
       items: [
         { name: 'Orders', path: '/dashboard/jobs', icon: Scissors },
+        // Shows order value, so owner / branch manager only (same as the API).
+        ...((isStoreOwner || isBranchManager) ? [{ name: 'Completed Orders', path: '/dashboard/completed-orders', icon: PackageCheck }] : []),
         { name: 'Customers', path: '/dashboard/customers', icon: Users },
         // Texts wait for the shop to check the number and wording before they are sent.
         ...((isStoreOwner || isBranchManager) ? [{ name: 'Text Messages', path: '/dashboard/sms', icon: MessageSquare }] : []),
@@ -346,7 +349,10 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
 
         {/* Page content */}
         <main data-scroll-root className="flex-1 overflow-y-auto bg-canvas print:p-0 print:overflow-visible print:bg-white">
-          <div className="p-4 print:p-0">
+          {/* Keyed by branch: switching branches remounts the page, so every
+              list, count and form starts empty and reloads for the new branch
+              instead of briefly showing the previous branch's data. */}
+          <div key={selectedBranchId ?? 'all'} className="p-4 print:p-0">
             {children}
           </div>
         </main>

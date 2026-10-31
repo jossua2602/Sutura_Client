@@ -146,11 +146,11 @@ export default function StoreLocationsTab({
                     ) : null}
                     {branch.is_main ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-none bg-amber-100 text-amber-900 border border-amber-300">
-                        Main Branch (HQ)
+                        Main Shop
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-none bg-white/90 text-ink shadow-xs">
-                        Satellite Branch
+                        Branch Shop
                       </span>
                     )}
                     {isOwnerViewingOwnStore && branch.status === 'inactive' && (
@@ -179,6 +179,20 @@ export default function StoreLocationsTab({
                         {formatAddress(branch)}
                       </span>
                     </p>
+
+                    {/* Landmark, with the shop's photo of it when there is one. */}
+                    {(branch.landmark || branch.landmark_image_url) && (
+                      <div className="flex items-center gap-2 text-xs text-ink-muted">
+                        {branch.landmark_image_url && (
+                          <a href={branch.landmark_image_url} target="_blank" rel="noopener noreferrer" aria-label="Open the landmark photo"
+                            className="block h-10 w-10 shrink-0 overflow-hidden rounded-md border border-line">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={branch.landmark_image_url} alt="" className="h-full w-full object-cover" />
+                          </a>
+                        )}
+                        <span>{branch.landmark ? `Landmark: ${branch.landmark}` : 'Landmark photo'}</span>
+                      </div>
+                    )}
 
                     {branch.contact_number && (
                       <p className="text-xs text-ink-muted flex items-center gap-1.5">

@@ -6,7 +6,7 @@ import {
   Home, Calendar, CreditCard, Scissors, Users,
   ShoppingBag, Package, UserCog, LayoutDashboard,
   Building2, ScrollText, Settings, ChevronRight,
-  HelpCircle, Star, Ruler, Sparkles, type LucideIcon
+  HelpCircle, Star, Ruler, Sparkles, PackageCheck, type LucideIcon
 } from 'lucide-react';
 
 interface BreadcrumbSegment {
@@ -65,6 +65,8 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
     } else {
       segments.push({ label: 'Custom Jobs' });
     }
+  } else if (pathname.startsWith('/dashboard/completed-orders')) {
+    segments.push({ label: 'Completed Orders', href: '/dashboard/completed-orders', icon: PackageCheck });
   } else if (pathname.startsWith('/dashboard/customers')) {
     segments.push({ label: 'Customer Records', href: '/dashboard/customers', icon: Users });
     if (pathname.match(/\/dashboard\/customers\/\d+/)) {

@@ -352,11 +352,11 @@ export default function BranchesMap({
                     <div className="flex items-center gap-1.5 mb-1">
                       {Boolean(branch.is_main) ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded-none">
-                          <Star size={10} className="fill-amber-500" /> Primary Headquarters
+                          <Star size={10} className="fill-amber-500" /> Main Shop
                         </span>
                       ) : (
                         <span className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">
-                          Satellite Branch
+                          Branch Shop
                         </span>
                       )}
                     </div>
