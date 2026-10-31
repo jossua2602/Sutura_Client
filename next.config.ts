@@ -1,5 +1,16 @@
 import type { NextConfig } from "next";
 
+// Uploaded files live on the API's /storage (see getMediaUrl). In production that is
+// NEXT_PUBLIC_API_URL's host (e.g. api.suturaofficial.tech), which next/image must allow.
+const apiStorage = (() => {
+  try {
+    const url = new URL(process.env.NEXT_PUBLIC_API_URL ?? '');
+    return [{ protocol: url.protocol.replace(':', '') as 'http' | 'https', hostname: url.hostname, port: url.port, pathname: '/storage/**' }];
+  } catch {
+    return [];
+  }
+})();
+
 const nextConfig: NextConfig = {
   // Both hostnames are used interchangeably in local dev (see the images
   // remotePatterns note below) — allow dev-resource requests (HMR, etc.)
@@ -19,6 +30,7 @@ const nextConfig: NextConfig = {
       { protocol: 'http', hostname: 'localhost', port: '', pathname: '/storage/**' },
       // Seeded demo services/catalog items reference stock photos from Unsplash.
       { protocol: 'https', hostname: 'images.unsplash.com' },
+      ...apiStorage,
     ],
   },
   async redirects() {

@@ -3,7 +3,8 @@ import Image from 'next/image';
 import { MapPin, X, Check, Navigation, ArrowLeft, ExternalLink } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
-import { pinName, type DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
+import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
+import { pinName } from '@/components/discovery/pinName';
 import type { SavedLocation } from '@/lib/customerLocation';
 
 interface MapSidebarSelectedStoreProps {

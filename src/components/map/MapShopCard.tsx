@@ -4,7 +4,8 @@ import Image from 'next/image';
 import { MapPin, Star, Store } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { specializationLabel } from '@/lib/storeSpecializations';
-import { pinName, type DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
+import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
+import { pinName } from '@/components/discovery/pinName';
 
 const fmtKm = (km: number) => (km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`);
 

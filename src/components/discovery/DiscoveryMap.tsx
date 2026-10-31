@@ -308,10 +308,10 @@ function MapEventsHandler({
   return null;
 }
 
-/** A pin's name: the shop's name for its Main Shop, the branch's own name for a Branch Shop. */
-export function pinName(b: Pick<DiscoveryMapBranch, 'isMain' | 'storeName' | 'branchName'>): string {
-  return b.isMain ? b.storeName : (b.branchName || b.storeName);
-}
+// A pin's name: the shop's name for its Main Shop, the branch's own name for a Branch Shop.
+// Lives in its own leaflet-free file so list UI can import it during server prerender.
+import { pinName } from './pinName';
+export { pinName };
 
 export interface DiscoveryMapBranch {
   storeSlug: string;
