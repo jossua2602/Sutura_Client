@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { refreshSubscriptionTier } from '@/hooks/useSubscriptionTier';
 import api from '@/lib/axios';
-import { BRANCH_LIMITS, type Plan, type Subscription, type UpgradeRequest } from './billingTypes';
+import { BRANCH_LIMITS, type PaymentDetails, type Plan, type Subscription, type UpgradeRequest } from './billingTypes';
 
 export function useBillingData() {
   const { store, user } = useAuthStore();
@@ -74,10 +74,11 @@ export function useBillingData() {
     if (!store) return;
     setUpgradingTo(planId);
     try {
-      await api.post(`/stores/${store.id}/subscription`, { plan_id: planId, billing_cycle: 'monthly' });
+      const res = await api.post(`/stores/${store.id}/subscription`, { plan_id: planId, billing_cycle: 'monthly' });
       await fetchBillingData();
       await refreshSubscriptionTier(store.id);
-      toast.success('Subscription updated successfully.');
+      // A switch from a paid plan waits for the period to end; the server says when.
+      toast.success(res.data?.message || 'Subscription updated successfully.');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Failed to update subscription.');
@@ -86,14 +87,19 @@ export function useBillingData() {
     }
   };
 
-  // A paid upgrade / renewal: GCash receipt → admin approval; the plan only changes then.
-  const submitUpgradeRequest = async (planId: number, billingCycle: 'monthly' | 'yearly', receipt: File, reference: string) => {
+  // A paid upgrade / renewal / downgrade: GCash receipt + its details → admin check; the plan changes then.
+  const submitUpgradeRequest = async (planId: number, billingCycle: 'monthly' | 'yearly', receipt: File, details: PaymentDetails) => {
     if (!store) return false;
     const fd = new FormData();
     fd.append('plan_id', String(planId));
     fd.append('billing_cycle', billingCycle);
     fd.append('payment_receipt', receipt);
-    if (reference.trim()) fd.append('payment_reference', reference.trim());
+    if (details.reference.trim()) fd.append('payment_reference', details.reference.trim());
+    fd.append('sender_name', details.senderName.trim());
+    fd.append('sender_number', details.senderNumber);
+    fd.append('amount_sent', details.amountSent);
+    // datetime-local is the owner's local (PH) time; send it with the offset.
+    fd.append('paid_at', new Date(details.paidAt).toISOString());
     try {
       const res = await api.post(`/stores/${store.id}/subscription/upgrade-requests`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       toast.success(res.data.message || 'Payment sent for review.');
@@ -103,6 +109,19 @@ export function useBillingData() {
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Could not send your payment. Please try again.');
       return false;
+    }
+  };
+
+  // A free downgrade waiting for the period to end can be called off (a paid one can't).
+  const cancelScheduledChange = async () => {
+    if (!store) return;
+    try {
+      const res = await api.delete(`/stores/${store.id}/subscription/scheduled-change`);
+      toast.success(res.data.message);
+      await fetchBillingData();
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Could not cancel the plan change.');
     }
   };
 
@@ -145,6 +164,7 @@ export function useBillingData() {
     upgradeRequests,
     pendingRequest,
     submitUpgradeRequest,
+    cancelScheduledChange,
     storeId: store?.id,
   };
 }

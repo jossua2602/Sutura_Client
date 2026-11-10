@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { borrowTabSession, serveTabSessions } from '@/lib/tabSession';
 
 /**
  * Mounted once in the root layout. useAuthStore always starts in the
@@ -9,12 +10,22 @@ import { useAuthStore } from '@/store/useAuthStore';
  * server-rendered HTML exactly (no hydration mismatch); this effect then
  * reads this tab's own login (sessionStorage) after mount, updating the store
  * via a normal post-hydration re-render instead of during hydration itself.
+ *
+ * A tab opened with "Open link in new tab" has no login of its own yet: it
+ * first borrows the login of an open SUTURA tab (see lib/tabSession.ts), so
+ * the page opens signed in instead of on the login screen.
  */
 export default function AuthHydrator() {
   useEffect(() => {
-    useAuthStore.getState().hydrate();
-    const token = typeof window !== 'undefined' ? sessionStorage.getItem('sutura_token') : null;
-    if (token) {
+    // Every tab answers new tabs' requests (shop/customer and admin logins).
+    serveTabSessions();
+
+    let cancelled = false;
+    borrowTabSession('shop').then(() => {
+      if (cancelled) return;
+      useAuthStore.getState().hydrate();
+      const token = sessionStorage.getItem('sutura_token');
+      if (!token) return;
       import('@/lib/axios').then(({ default: api }) => {
         api.get('/auth/me')
           .then((res) => {
@@ -29,7 +40,8 @@ export default function AuthHydrator() {
             }
           });
       });
-    }
+    });
+    return () => { cancelled = true; };
   }, []);
 
   return null;

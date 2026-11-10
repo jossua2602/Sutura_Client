@@ -4,7 +4,6 @@ import React, { useEffect, useState, useMemo, FormEvent } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { getSavedLocation, haversineKm } from '@/lib/customerLocation';
 import { MessageSquare, Ruler, Shirt, Scissors, Package } from 'lucide-react';
 import {
   StoreSettings,
@@ -140,8 +139,9 @@ export function useBookingWizard(storeId: string) {
   // Calendar Appointments
   const [calendarAppointments, setCalendarAppointments] = useState<CalendarAppointment[]>([]);
 
-  // User Location
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  // The branch is locked to the shop the customer chose (?branch=), so the
+  // booking page no longer looks up the customer's location to sort by nearest.
+  const userLocation = null;
 
   useEffect(() => {
     if (!user) return;
@@ -151,18 +151,6 @@ export function useBookingWizard(storeId: string) {
       phone: prev.phone || user.phone || '',
     }));
   }, [user]);
-
-  useEffect(() => {
-    const loc = getSavedLocation();
-    if (loc) {
-      setUserLocation({ lat: loc.lat, lng: loc.lng });
-    } else if (typeof navigator !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {}
-      );
-    }
-  }, []);
 
   const [returnToReview, setReturnToReview] = useState(false);
   const qtyParam = searchParams.get('qty') || searchParams.get('quantity');
@@ -376,41 +364,28 @@ export function useBookingWizard(storeId: string) {
   // The picker only reappears when the entry point genuinely carried neither
   // (a plain "Book Appointment" from the store profile, not tied to any
   // design or service).
-  const hasServiceContext = !!serviceIdParam || !!refName || !!packageIdParam;
-  const needsServicePicker = !hasServiceContext && appointmentType !== 'pickup' && appointmentType !== 'other' && !!storeSettings?.services && storeSettings.services.length > 0;
+  // The Service dropdown was removed from Step 2 on request: a service still
+  // comes through when the customer starts from a service, design or package
+  // (service_id in the URL), but a plain "Book Appointment" no longer asks.
+  const needsServicePicker = false;
   const needsOrderReference = (appointmentType === 'fitting' || appointmentType === 'pickup') && !refName;
 
   const totalSteps = 3;
   const displayStep = step;
   const prevStep = step - 1;
 
-  const branchesWithDistance = useMemo(() => {
-    if (!storeSettings?.branches) return [];
-    return storeSettings.branches
-      .map((b) => {
-        let distanceKm: number | null = null;
-        if (userLocation && b.latitude != null && b.longitude != null) {
-          distanceKm = haversineKm(userLocation.lat, userLocation.lng, Number(b.latitude), Number(b.longitude));
-        }
-        return { ...b, distanceKm };
-      })
-      .sort((a, b) => {
-        if (a.distanceKm !== null && b.distanceKm !== null) return a.distanceKm - b.distanceKm;
-        if (a.distanceKm !== null) return -1;
-        if (b.distanceKm !== null) return 1;
-        return 0;
-      });
-  }, [storeSettings?.branches, userLocation]);
+  // No distance sorting: the branch is locked to the one the customer chose.
+  const branchesWithDistance = useMemo(() => storeSettings?.branches ?? [], [storeSettings?.branches]);
 
+  // Lock the branch to where the customer started: the ?branch= they came
+  // from (map pin, storefront, branch card), otherwise the shop's main branch.
   useEffect(() => {
-    if (!selectedBranchId && branchesWithDistance.length > 0) {
-      const match = branchSlugParam && branchesWithDistance.find((b) => b.slug === branchSlugParam || String(b.id) === branchSlugParam);
-      if (match) {
-        setSelectedBranchId(String(match.id));
-      } else {
-        setSelectedBranchId(String(branchesWithDistance[0].id));
-      }
-    }
+    if (selectedBranchId || branchesWithDistance.length === 0) return;
+    const match =
+      (branchSlugParam && branchesWithDistance.find((b) => b.slug === branchSlugParam || String(b.id) === branchSlugParam)) ||
+      branchesWithDistance.find((b) => b.is_main) ||
+      branchesWithDistance[0];
+    setSelectedBranchId(String(match.id));
   }, [branchesWithDistance, selectedBranchId, branchSlugParam]);
 
   const selectedBranch = useMemo(() => {
@@ -479,13 +454,6 @@ export function useBookingWizard(storeId: string) {
       .then((res) => {
         const settings = res.data.data;
         setStoreSettings(settings);
-
-        const branchFromSlug = branchSlugParam && settings?.branches?.find((b: Branch) => b.slug === branchSlugParam);
-        if (branchFromSlug) {
-          setSelectedBranchId(branchFromSlug.id.toString());
-        } else if (settings?.branches && settings.branches.length === 1) {
-          setSelectedBranchId(settings.branches[0].id.toString());
-        }
 
         if (serviceIdParam && settings?.services?.some((s: Service) => s.id.toString() === serviceIdParam)) {
           setSelectedServiceId(serviceIdParam);

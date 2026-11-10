@@ -35,6 +35,10 @@ export interface StoreSettingsData {
   fitting_fee: number;
   fitting_limit: number;
   fitting_limit_policy: 'fee' | 'block';
+  /** Days a customer has to come in once the order is Ready for Fitting. */
+  fitting_visit_days: number;
+  /** Ready-for-Fitting message; {days} and {date} are filled in. '' = the default message. */
+  fitting_message: string;
   repair_requires_downpayment: boolean;
   // Shop-wide defaults for new orders; designs, services and combos can override them.
   default_measurement_requirement: 'none' | 'existing' | 'shop';
@@ -99,6 +103,8 @@ export function useSettings() {
     fitting_fee: 0,
     fitting_limit: 3,
     fitting_limit_policy: 'fee' as 'fee' | 'block',
+    fitting_visit_days: 7,
+    fitting_message: '',
     repair_requires_downpayment: false,
     default_measurement_requirement: 'shop' as 'none' | 'existing' | 'shop',
     default_fitting_requirement: 'optional' as 'none' | 'optional' | 'required',
@@ -162,6 +168,8 @@ export function useSettings() {
             fitting_fee: s.fitting_fee ?? 0,
             fitting_limit: s.fitting_limit ?? 3,
             fitting_limit_policy: s.fitting_limit_policy === 'block' ? 'block' : 'fee',
+            fitting_visit_days: s.fitting_visit_days ?? 7,
+            fitting_message: s.fitting_message ?? '',
             repair_requires_downpayment: !!s.repair_requires_downpayment,
             default_measurement_requirement: s.default_measurement_requirement ?? 'shop',
             default_fitting_requirement: s.default_fitting_requirement ?? 'optional',

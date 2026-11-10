@@ -10,6 +10,7 @@ import Link from 'next/link';
 
 import { AnalyticsData, JobItem, StaffPresence } from '@/components/dashboard/dashboardHelpers';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import QuickActions from '@/components/dashboard/QuickActions';
 import ActionQueue from '@/components/dashboard/ActionQueue';
 import NeedsDecisionCard from '@/components/dashboard/NeedsDecisionCard';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
@@ -255,11 +256,17 @@ function DashboardPageContent() {
       {activeTab === 'dashboard' && !canViewAnalytics && (
         // Plain staff can't call GET /analytics (owner/manager only), so they get their own
         // Home built from the shop-floor endpoint — production numbers and queue, no financials.
-        <StaffHome storeId={storeId} name={user?.name} />
+        <>
+          <QuickActions storeId={storeId} />
+          <StaffHome storeId={storeId} name={user?.name} />
+        </>
       )}
 
       {activeTab === 'dashboard' && canViewAnalytics && (
         <>
+      {/* ── Section 1a: one tap into each create flow ─────────────────────── */}
+      <QuickActions storeId={storeId} />
+
       {/* ── Section 1b: what needs a decision before anything else ───────── */}
       <NeedsDecisionCard storeId={storeId} enabled={canViewAnalytics} />
 

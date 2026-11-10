@@ -198,7 +198,6 @@ export default function CatalogFindInStoreSheet({
             )}
           </div>
           <div className="min-w-0">
-            <p className="text-base font-bold text-ink">₱{Number(itemPrice).toLocaleString()}</p>
             <p className="text-sm font-semibold text-ink-body truncate">{itemName}</p>
           </div>
         </div>

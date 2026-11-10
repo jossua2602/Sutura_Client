@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   List, LayoutGrid, Calendar as CalendarIcon, AlertCircle,
   Plus, Clock, CheckCircle2, Scissors, Building2, SlidersHorizontal,
@@ -98,6 +98,16 @@ export default function AppointmentsPage() {
     pendingCount,
   } = useAppointments();
 
+  // ?new=1 (Home → Quick Actions) opens the New Appointment form right away,
+  // then drops the flag so a refresh doesn't reopen it.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('new') !== '1') return;
+    setEditingApt(null);
+    setError('');
+    setShowCreateModal(true);
+    window.history.replaceState(null, '', window.location.pathname);
+  }, [setEditingApt, setError, setShowCreateModal]);
+
   const { selectedBranchId, branches: branchList } = useBranch();
   const currentBranch = branchList.find(b => b.id === selectedBranchId);
 
@@ -171,35 +181,28 @@ export default function AppointmentsPage() {
           // so without its own wrap the second button would overflow off
           // the edge of the screen instead of dropping to its own line.
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Staff's narrow booking authority — a follow-up visit only,
-                not the full owner/manager form. See docs/STAFF-WORKFLOW.md §17. */}
             <button
               type="button"
               onClick={() => {
                 setFollowUpError('');
                 setShowFollowUpModal(true);
               }}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xs transition-colors min-h-[40px] ${
-                isOwnerOrManager
-                  ? 'bg-surface border border-taupe/40 hover:bg-taupe/10 text-taupe'
-                  : 'bg-taupe hover:bg-taupe-hover text-white'
-              }`}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xs transition-colors min-h-[40px] bg-surface border border-taupe/40 hover:bg-taupe/10 text-taupe"
             >
               <CalendarPlus size={16} /> Schedule Follow-Up
             </button>
-            {isOwnerOrManager && (
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingApt(null);
-                  setError('');
-                  setShowCreateModal(true);
-                }}
-                className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xs transition-colors min-h-[40px]"
-              >
-                <Plus size={16} /> New Appointment
-              </button>
-            )}
+            {/* Every shop role books appointments (staff: their own branch, set by the server). */}
+            <button
+              type="button"
+              onClick={() => {
+                setEditingApt(null);
+                setError('');
+                setShowCreateModal(true);
+              }}
+              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xs transition-colors min-h-[40px]"
+            >
+              <Plus size={16} /> New Appointment
+            </button>
           </div>
         }
       />

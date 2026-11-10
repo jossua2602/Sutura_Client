@@ -52,6 +52,37 @@ const SECTIONS: LegalSection[] = [
     ),
   },
   {
+    id: 'shop-applications',
+    heading: 'Shop applications',
+    body: (
+      <>
+        <p>When you apply to open a shop on SUTURA, we collect:</p>
+        <ul>
+          <li>Your name, date of birth, contact number and email.</li>
+          <li>Your business documents: DTI registration, TIN or BIR Form 2303, barangay clearance, business permits and a photo of your shop front.</li>
+          <li>A photo of one government ID and the ID type.</li>
+          <li>A selfie of you holding that ID, taken live with your device camera.</li>
+          <li>Your plan payment receipt.</li>
+        </ul>
+        <p>
+          We use these only to check that the shop and its owner are real before the shop goes live. A face check runs
+          on your own device to make sure your face is visible in the selfie; the photo itself is compared with your ID
+          by a person on the SUTURA review team. We don&apos;t use automated face matching.
+        </p>
+        <p>
+          Only the SUTURA review team can see these files. They are stored privately, never shown on your shop profile,
+          and never shared with customers or other shops.
+        </p>
+        <p>
+          Your selfie is deleted 30 days after your application is approved or rejected. Your other documents are kept
+          while your shop is on SUTURA, so we can re-check them if a question comes up. You can ask us to delete them
+          when you close your shop.
+        </p>
+        <p>We record when you gave this consent and agreed to our terms.</p>
+      </>
+    ),
+  },
+  {
     heading: 'Your rights',
     body: (
       <p>
@@ -76,7 +107,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updated="October 31, 2026"
+      updated="November 10, 2026"
       intro={
         <p>
           SUTURA connects customers with tailoring shops in Davao City and helps shops track orders. This page

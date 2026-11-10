@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { ServiceOrderState } from './useServiceOrder';
 import { ChoiceCard, SectionLabel, StepIntro } from './orderUi';
+import { formatAddress } from '@/lib/formatAddress';
 
 const TEXT_INPUT = 'w-full h-[48px] bg-canvas border border-line rounded-none px-4 text-base text-ink focus:outline-none focus:border-taupe placeholder:text-ink-faint';
 
@@ -58,7 +59,7 @@ export default function OrderCustomerStep({ o }: Readonly<{ o: ServiceOrderState
                 selected={o.branchId === b.id}
                 onSelect={() => o.setBranchId(b.id)}
                 label={b.name}
-                detail={[b.address, b.city].filter(Boolean).join(', ')}
+                detail={formatAddress({ address: b.address, city: b.city })}
               />
             ))}
           </div>

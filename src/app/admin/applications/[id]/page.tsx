@@ -20,7 +20,7 @@ const STATUS_BADGE: Record<string, BadgeVariant> = { pending: 'warning', approve
 
 export default function ApplicationDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
-  const { store, documents, error, suggestedLogin, loginDomain, changeItems, approve, reject, requestChanges } = useApplicationDetail(id);
+  const { store, documents, missingDocuments, error, suggestedLogin, loginDomain, changeItems, approve, reject, requestChanges } = useApplicationDetail(id);
   const toast = useToast();
   const [rejectOpen, setRejectOpen] = useState(false);
   const [approveOpen, setApproveOpen] = useState(false);
@@ -170,6 +170,12 @@ export default function ApplicationDetailPage({ params }: Readonly<{ params: Pro
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             {documents.map((doc) => <DocumentTile key={doc.key} storeId={store.id} storeName={store.name} doc={doc} status={statusOf(doc)} />)}
           </div>
+        )}
+        {documents.length > 0 && missingDocuments.length > 0 && (
+          <p className="mt-3 text-sm text-ink-muted">
+            <span className="font-semibold text-ink">Not provided (recommended):</span>{' '}
+            {missingDocuments.map((d) => d.label).join(', ')}. Use Request Changes if you need them.
+          </p>
         )}
       </section>
 

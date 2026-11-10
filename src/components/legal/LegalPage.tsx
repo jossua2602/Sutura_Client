@@ -5,6 +5,8 @@ import PublicNav from '@/components/shared/PublicNav';
 export interface LegalSection {
   readonly heading: string;
   readonly body: ReactNode;
+  /** Anchor for linking straight to this section (e.g. /privacy#shop-applications). */
+  readonly id?: string;
 }
 
 /**
@@ -29,7 +31,7 @@ export default function LegalPage({ title, updated, intro, sections }: {
 
           <div className="space-y-8">
             {sections.map((s) => (
-              <section key={s.heading} className="border-t border-line pt-6">
+              <section key={s.heading} id={s.id} className="scroll-mt-24 border-t border-line pt-6">
                 <h2 className="text-lg font-semibold text-ink mb-3">{s.heading}</h2>
                 <div className="mobile-body-md sm:tablet-body-md text-ink-body space-y-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1.5">
                   {s.body}

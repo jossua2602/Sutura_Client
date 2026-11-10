@@ -3,7 +3,22 @@ import { Star, Store, User, type LucideIcon } from 'lucide-react';
 export const isWalkInEmail = (email?: string) => 
   email ? (email.startsWith('walkin_') && email.endsWith('@sutura.com')) : false;
 
-export const isWalkInCustomer = (customer?: { email?: string; is_walk_in?: boolean; intake_channel?: string; suki_tag?: string | null } | null) => {
+/**
+ * The email this customer actually gets order updates at: their notification
+ * email (contact_email — what staff typed for a walk-in, may be shared with
+ * a family member), else their login email. '' for a walk-in with none.
+ */
+export const customerEmail = (customer?: { email?: string | null; contact_email?: string | null } | null): string => {
+  if (!customer) return '';
+  if (customer.contact_email) return customer.contact_email;
+  return customer.email && !isWalkInEmail(customer.email) ? customer.email : '';
+};
+
+/** Philippine mobile number: 11 digits starting with 09 (e.g. 09663946888). */
+export const PH_MOBILE_PATTERN = /^09\d{9}$/;
+export const EMAIL_FORMAT_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+export const isWalkInCustomer =(customer?: { email?: string; is_walk_in?: boolean; intake_channel?: string; suki_tag?: string | null } | null) => {
   if (!customer) return false;
   if (customer.is_walk_in === true || customer.intake_channel === 'walk_in') return true;
   if (customer.email && customer.email.startsWith('walkin_') && customer.email.endsWith('@sutura.com')) return true;

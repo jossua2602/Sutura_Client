@@ -1,20 +1,13 @@
 'use client';
 
 import React, { use } from 'react';
-import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useCatalogItemDetail } from '@/components/store-catalog-detail/hooks/useCatalogItemDetail';
 import CatalogDetailHeader from '@/components/store-catalog-detail/CatalogDetailHeader';
 import CatalogDesktopHeader from '@/components/store-catalog-detail/CatalogDesktopHeader';
 import CatalogDetailGrid from '@/components/store-catalog-detail/CatalogDetailGrid';
 import CatalogHeroGallery from '@/components/store-catalog-detail/CatalogHeroGallery';
-import CatalogProductInfo from '@/components/store-catalog-detail/CatalogProductInfo';
-import CatalogColorSelector from '@/components/store-catalog-detail/CatalogColorSelector';
-import CatalogSizeSelector from '@/components/store-catalog-detail/CatalogSizeSelector';
-import CatalogAccordionSections from '@/components/store-catalog-detail/CatalogAccordionSections';
-import CatalogRatingsSection from '@/components/store-catalog-detail/CatalogRatingsSection';
-import CatalogStoreProfileCard from '@/components/store-catalog-detail/CatalogStoreProfileCard';
-import CatalogRecommendationsSection from '@/components/store-catalog-detail/CatalogRecommendationsSection';
+import Link from 'next/link';
 import CatalogBottomActionBar from '@/components/store-catalog-detail/CatalogBottomActionBar';
 import CatalogDesktopActionButtons from '@/components/store-catalog-detail/CatalogDesktopActionButtons';
 import CatalogFindInStoreSheet from '@/components/store-catalog-detail/CatalogFindInStoreSheet';
@@ -26,8 +19,6 @@ export default function PublicProductDetailPage({
   params,
 }: Readonly<{ params: Promise<{ store_id: string; item_id: string }> }>) {
   const { store_id: storeId, item_id: itemId } = use(params);
-  const router = useRouter();
-
   const {
     item,
     loading,
@@ -35,15 +26,6 @@ export default function PublicProductDetailPage({
     setSelectedImage,
     selectedVariation,
     setSelectedVariation,
-    selectedColor,
-    setSelectedColor,
-    colorOptions,
-    selectedSize,
-    setSelectedSize,
-    orderSuccess,
-    isSaved,
-    togglingSave,
-    handleToggleSave,
     isBulkItem,
     bulkMinQty,
     bulkRosterFields,
@@ -59,16 +41,7 @@ export default function PublicProductDetailPage({
     bulkSubmitting,
     bulkError,
     handleBulkOrder,
-    myRating,
-    setMyRating,
-    hoverRating,
-    setHoverRating,
-    submittingReview,
-    reviewMessage,
-    handleSubmitReview,
     headerOpacity,
-    fromSameShop,
-    moreLikeThis,
     showFind,
     setShowFind,
     findInteractive,
@@ -148,51 +121,25 @@ export default function PublicProductDetailPage({
               setSelectedVariation={setSelectedVariation}
               storeId={storeId}
               itemId={itemId}
-              colorOptions={colorOptions}
-              isSaved={isSaved}
-              togglingSave={togglingSave}
-              onToggleSave={handleToggleSave}
-              myRating={myRating}
-              setMyRating={setMyRating}
-              hoverRating={hoverRating}
-              setHoverRating={setHoverRating}
-              onSubmitRating={handleSubmitReview}
-              submittingReview={submittingReview}
+              colorOptions={[]}
+              disableZoom={false}
+              hideActions
             />
           }
           buyZone={
-          <div className="px-4 min-[375px]:px-6 min-[600px]:px-0">
-            {/* Name → Rating → Price → Production Estimate → Service/Fabric */}
-            <CatalogProductInfo item={item} />
-
-            {/* Color row — only rendered when the item actually has more
-                than one color; picking a swatch switches the hero gallery
-                to that color's own photo. */}
-            {colorOptions.length > 1 && (
-              <div className="flex items-start gap-0 py-3.5 border-b border-line">
-                <span className="w-[110px] shrink-0 text-sm text-ink-muted">Color</span>
-                <div className="flex-1">
-                  <CatalogColorSelector
-                    options={colorOptions}
-                    selectedColor={selectedColor}
-                    onSelectColor={(opt) => {
-                      setSelectedColor(opt.name);
-                      setSelectedImage(opt.modelImage);
-                      setSelectedVariation(opt.name);
-                    }}
-                  />
-                </div>
-              </div>
+          <div className="px-4 min-[375px]:px-6 min-[600px]:px-0 pt-4 min-[600px]:pt-0 space-y-3">
+            {/* Photos and description only: no price, ratings, colors, sizes or specs. */}
+            <h1 className="text-2xl min-[600px]:text-[28px] font-bold text-ink leading-tight">{item.name}</h1>
+            {item.store && (
+              <Link href={gate(`/store/${item.store.slug}`)} className="inline-block text-sm font-semibold text-taupe hover:underline">
+                {item.store.name}
+              </Link>
             )}
-
-            {/* Size row */}
-            <CatalogSizeSelector
-              sizes={item.sizes}
-              selectedSize={selectedSize}
-              onSelectSize={setSelectedSize}
-              orderSuccess={orderSuccess}
-              onViewOrder={id => router.push(`/account/orders/${id}`)}
-            />
+            {item.description?.trim() ? (
+              <p className="text-sm text-ink-body leading-relaxed whitespace-pre-line">{item.description}</p>
+            ) : (
+              <p className="text-sm text-ink-faint">No description yet.</p>
+            )}
 
             {/* Find a Branch | Book an Appointment (desktop/tablet inline buttons) */}
             <CatalogDesktopActionButtons
@@ -205,48 +152,6 @@ export default function PublicProductDetailPage({
           }
         />
 
-        {/* ──────────────────────────────────────────────────────
-            SECTION 2: Size Guide · Specification · Description
-        ────────────────────────────────────────────────────── */}
-        <div className="mt-6 px-4 min-[375px]:px-6 min-[600px]:px-0">
-          <CatalogAccordionSections item={item} />
-        </div>
-
-        {/* ──────────────────────────────────────────────────────
-            SECTION 3: Product Ratings
-        ────────────────────────────────────────────────────── */}
-        <div className="mt-4 px-4 min-[375px]:px-6 min-[600px]:px-0">
-          <CatalogRatingsSection
-            item={item}
-            storeId={storeId}
-            itemId={itemId}
-            myRating={myRating}
-            setMyRating={setMyRating}
-            hoverRating={hoverRating}
-            setHoverRating={setHoverRating}
-            submittingReview={submittingReview}
-            reviewMessage={reviewMessage}
-            onSubmitReview={handleSubmitReview}
-          />
-        </div>
-
-        {/* ──────────────────────────────────────────────────────
-            SECTION 4: Shop Profile
-        ────────────────────────────────────────────────────── */}
-        <div className="mt-4 px-4 min-[375px]:px-6 min-[600px]:px-0">
-          <CatalogStoreProfileCard item={item} gate={gate} />
-        </div>
-
-        {/* ──────────────────────────────────────────────────────
-            SECTION 5 & 6: From the Same Shop + You May Also Like
-        ────────────────────────────────────────────────────── */}
-        <div className="mt-6 px-4 min-[375px]:px-6 min-[600px]:px-0">
-          <CatalogRecommendationsSection
-            fromSameShop={fromSameShop}
-            moreLikeThis={moreLikeThis}
-            storeId={storeId}
-          />
-        </div>
       </main>
 
       {/* Mobile sticky bottom action bar */}

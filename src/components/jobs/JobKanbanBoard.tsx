@@ -9,7 +9,7 @@ import JobQuickViewModal from './JobQuickViewModal';
 import { getMediaUrl } from '@/lib/media';
 import { depositFraction } from './requirements';
 import type { Staff } from '@/components/staff/staffHelpers';
-import { roleLabel } from '@/components/staff/staffHelpers';
+import { roleLabel, staffForBranch, staffOptionLabel } from '@/components/staff/staffHelpers';
 
 /**
  * A plain mouse wheel scrolls the board sideways across the columns. Left
@@ -349,12 +349,11 @@ export default function JobKanbanBoard({
                               className="text-[11px] font-bold bg-canvas border border-line rounded-md px-2 py-1 text-ink focus:outline-none cursor-pointer max-w-[130px] truncate"
                             >
                               <option value="">+ Assign Tailor</option>
-                              {staffList.map((s) => {
+                              {staffForBranch(staffList, job.store_branch_id, assignedStaffId).map((s) => {
                                 const sUserId = s.user_id ?? s.user?.id;
-                                const sName = s.user?.name || `Tailor #${sUserId}`;
                                 return (
                                   <option key={sUserId} value={sUserId}>
-                                    {sName}
+                                    {staffOptionLabel(s)}
                                   </option>
                                 );
                               })}
@@ -692,12 +691,11 @@ export default function JobKanbanBoard({
                               className="bg-transparent font-bold cursor-pointer focus:outline-none w-full truncate text-[11px]"
                             >
                               <option value="">+ Assign Tailor</option>
-                              {staffList.map((s) => {
+                              {staffForBranch(staffList, job.store_branch_id, assignedStaffId).map((s) => {
                                 const sUserId = s.user_id ?? s.user?.id;
-                                const sName = s.user?.name || `Tailor #${sUserId}`;
                                 return (
                                   <option key={sUserId} value={sUserId}>
-                                    {sName}
+                                    {staffOptionLabel(s)}
                                   </option>
                                 );
                               })}

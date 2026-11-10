@@ -24,6 +24,11 @@ export interface Subscription {
   starts_at: string;
   ends_at: string;
   billing_cycle?: string;
+  /** A downgrade queued for when this period ends (paid one: scheduled_payment_id). */
+  scheduled_plan_id?: number | null;
+  scheduled_billing_cycle?: string | null;
+  scheduled_payment_id?: number | null;
+  scheduled_plan?: { id: number; name: string } | null;
 }
 
 export const PLAN_META: Record<
@@ -92,7 +97,10 @@ export const COMPARE_ROWS = [
 
 export interface UpgradeRequest {
   id: number;
+  type?: 'new_shop' | 'upgrade' | 'renewal' | 'downgrade';
   plan_id: number;
+  billing_period_start?: string | null;
+  billing_period_end?: string | null;
   billing_cycle: 'monthly' | 'yearly';
   quoted_price: string | number;
   payment_reference: string | null;
@@ -107,6 +115,23 @@ export interface UpgradeRequest {
 export const planPrice = (plan: Plan, cycle: 'monthly' | 'yearly'): number =>
   cycle === 'yearly' ? Number(plan.price_yearly ?? plan.price_monthly * 10) : plan.price_monthly;
 
-/** Mirrors the server: a paid plan that is not a step down takes a payment. */
-export const planNeedsPayment = (plan: Plan, currentMonthly: number | null): boolean =>
-  plan.price_monthly > 0 && (currentMonthly === null || plan.price_monthly >= currentMonthly);
+/** Mirrors the server: every paid plan takes a GCash payment (a step down included). */
+export const planNeedsPayment = (plan: Plan): boolean => plan.price_monthly > 0;
+
+/** What paying for this plan does: renewal, upgrade, or a downgrade that starts at the end of the period. */
+export type PaymentKind = 'renewal' | 'upgrade' | 'downgrade';
+export const paymentKind = (plan: Plan, current: Subscription | null): PaymentKind => {
+  const running = current && ['active', 'trial'].includes(current.status) && (!current.ends_at || new Date(current.ends_at).getTime() > Date.now());
+  if (!running) return 'upgrade';
+  if (current.plan_id === plan.id) return 'renewal';
+  return plan.price_monthly < current.plan.price_monthly ? 'downgrade' : 'upgrade';
+};
+
+/** Details from the owner's GCash receipt, sent with the screenshot. */
+export interface PaymentDetails {
+  reference: string;
+  senderName: string;
+  senderNumber: string;
+  amountSent: string;
+  paidAt: string;
+}

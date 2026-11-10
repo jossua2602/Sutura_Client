@@ -201,28 +201,29 @@ export function useJobs() {
     }
   };
 
-  const handleApproveJob = async (jobId: number) => {
-    if (!store) return;
+  // Approving needs a due date (and optionally staff), same as a walk-in order —
+  // the page collects them in JobApproveModal. Returns whether it went through.
+  const handleApproveJob = async (
+    jobId: number,
+    details: { due_date: string; assigned_staff_id: number | null },
+  ): Promise<boolean> => {
+    if (!store) return false;
     const job = jobs.find(j => j.id === jobId);
-    if (!job) return;
+    if (!job) return false;
     setActionLoadingId(jobId);
     // Moves a pending job straight into 'production'
-    patchJob(jobId, { status: 'production', updated_at: new Date().toISOString() });
+    patchJob(jobId, { status: 'production', due_date: details.due_date, updated_at: new Date().toISOString() });
     try {
-      let res;
-      try {
-        res = await api.post(`/stores/${store.id}/jobs/${jobId}/approve`);
-      } catch {
-        // Fallback to PUT status update if needed
-        res = await api.put(`/stores/${store.id}/jobs/${jobId}`, { status: 'production', payment_status: job.payment_status, balance: job.balance });
-      }
+      const res = await api.post(`/stores/${store.id}/jobs/${jobId}/approve`, details);
       applyServerJob(jobId, res.data?.data);
       setPendingReviewCount((n) => Math.max(0, n - 1));
       toast.success('Job order approved into production.');
+      return true;
     } catch (err: unknown) {
       restoreJob(job);
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Failed to approve order.');
+      return false;
     } finally {
       setActionLoadingId(null);
     }

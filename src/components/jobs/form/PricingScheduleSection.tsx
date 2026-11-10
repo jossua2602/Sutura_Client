@@ -408,9 +408,7 @@ export default function PricingScheduleSection({
           Invoice & Balance Summary
         </span>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-          {/* Quantity — same design, several identical pieces for this ONE
-              customer/measurement profile. Not for a bulk order — that
-              already has one roster row per person via its own size sheet. */}
+          {/* Quantity — an individual order is always 1 piece (a bulk order has its own size sheet). */}
           {!isBulkOrder && (
             <div>
               <label
@@ -421,19 +419,11 @@ export default function PricingScheduleSection({
               </label>
               <input
                 id="quantity"
-                type="number"
-                min="1"
-                step="1"
-                value={formData.quantity}
-                onChange={(e) => {
-                  setFormData((prev) => ({ ...prev, quantity: e.target.value }));
-                }}
-                className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink font-semibold focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
-                placeholder="1"
+                type="text"
+                readOnly
+                value={1}
+                className="w-full bg-sunken border border-line rounded-lg px-3 py-2 text-sm text-ink font-semibold cursor-default focus:outline-none tabular-nums"
               />
-              <p className="text-[10px] text-ink-muted mt-1">
-                Identical pieces for this customer only — updates the total below automatically.
-              </p>
             </div>
           )}
 

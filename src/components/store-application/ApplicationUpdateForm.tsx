@@ -2,11 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { CheckCircle2, FileText, MapPin, X } from 'lucide-react';
+import { CheckCircle2, FileText, X } from 'lucide-react';
+import PinTools from '@/components/shared/PinTools';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import type { SavedLocation } from '@/lib/customerLocation';
 import { FileField, INPUT_CLASS, TextField } from './ApplicationFields';
+import SelfieCapture from './SelfieCapture';
+import { ageStatus } from './OwnerStep';
+import AddressFields, { addressErrors } from './AddressFields';
+import { EMPTY_PSGC_ADDRESS, type PsgcAddress } from '@/lib/psgc';
 import { GOVERNMENT_ID_TYPES, type PaymentMethod } from './applicationTypes';
 
 const LocationPicker = dynamic(() => import('@/components/discovery/LocationPicker'), { ssr: false });
@@ -17,7 +22,10 @@ interface UpdateRequest {
   note: string;
   expires_at: string;
   owner: { first_name: string; middle_name: string | null; last_name: string; suffix: string | null; birthday: string | null; contact_number: string; email: string | null } | null;
-  shop: { store_name: string; address: string; district: string | null; latitude: string | null; longitude: string | null } | null;
+  shop: {
+    store_name: string; address: string; district: string | null; latitude: string | null; longitude: string | null;
+    province_code: string | null; city_code: string | null; district_code: string | null; barangay_code: string | null;
+  } | null;
   payment_method: PaymentMethod | null;
   government_id_type: string | null;
 }
@@ -54,6 +62,9 @@ export default function ApplicationUpdateForm({ token }: { readonly token: strin
   const [shopName, setShopName] = useState('');
   const [address, setAddress] = useState('');
   const [location, setLocation] = useState<SavedLocation | null>(null);
+  const [area, setArea] = useState<PsgcAddress>(EMPTY_PSGC_ADDRESS);
+  const [areaDistrictRequired, setAreaDistrictRequired] = useState(false);
+  const [showAreaErrors, setShowAreaErrors] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash');
   const [govIdType, setGovIdType] = useState('');
@@ -72,6 +83,14 @@ export default function ApplicationUpdateForm({ token }: { readonly token: strin
         if (data.shop) {
           setShopName(data.shop.store_name);
           setAddress(data.shop.address);
+          // Names fill in from the lists once they load; only codes are needed here.
+          setArea({
+            ...EMPTY_PSGC_ADDRESS,
+            province_code: data.shop.province_code ?? '',
+            city_code: data.shop.city_code ?? '',
+            district_code: data.shop.district_code ?? '',
+            barangay_code: data.shop.barangay_code ?? '',
+          });
           if (data.shop.latitude && data.shop.longitude) {
             setLocation({ lat: Number(data.shop.latitude), lng: Number(data.shop.longitude), address: data.shop.address, district: data.shop.district ?? '' });
           }
@@ -106,15 +125,24 @@ export default function ApplicationUpdateForm({ token }: { readonly token: strin
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (has('shop')) {
+      setShowAreaErrors(true);
+      if (Object.keys(addressErrors(area, areaDistrictRequired)).length > 0) return setError('Choose your province, city or municipality, and barangay.');
+    }
     if (has('shop') && !location) return setError('Pin your shop on the map.');
     if (has('permits') && permits.length === 0) return setError('Attach at least one business permit.');
+    if (has('selfie') && !files.selfie_with_id) return setError('Take a new selfie holding your ID.');
 
     const form = new FormData();
     form.append('token', token);
     if (has('owner')) Object.entries(owner).forEach(([k, v]) => { if (v) form.append(k, v); });
     if (has('shop') && location) {
       form.append('store_name', shopName);
-      form.append('address', address);
+      form.append('address', address.trim());
+      form.append('province_code', area.province_code);
+      form.append('city_code', area.city_code);
+      if (area.district_code) form.append('district_code', area.district_code);
+      form.append('barangay_code', area.barangay_code);
       form.append('district', location.district);
       form.append('latitude', String(location.lat));
       form.append('longitude', String(location.lng));
@@ -155,7 +183,7 @@ export default function ApplicationUpdateForm({ token }: { readonly token: strin
             <TextField id="upd-middle" label="Middle Name" {...bindOwner('middle_name')} />
             <TextField id="upd-last" label="Last Name" required {...bindOwner('last_name')} />
             <TextField id="upd-suffix" label="Suffix (Jr., Sr.)" {...bindOwner('suffix')} />
-            <TextField id="upd-birthday" label="Date of Birth" type="date" required max={MAX_BIRTHDAY} {...bindOwner('birthday')} />
+            <TextField id="upd-birthday" label="Date of Birth" type="date" required max={MAX_BIRTHDAY} {...bindOwner('birthday')} status={ageStatus(owner.birthday ?? '')} />
             <TextField id="upd-phone" label="Contact Number" type="tel" required {...bindOwner('contact_number')} />
           </div>
           <TextField id="upd-email" label="Your Email" type="email" required {...bindOwner('email')} />
@@ -166,20 +194,16 @@ export default function ApplicationUpdateForm({ token }: { readonly token: strin
         <fieldset className="space-y-5">
           <legend className="mobile-h3 text-ink mb-4">Shop details</legend>
           <TextField id="upd-shop" label="Shop Name" required value={shopName} onChange={(e) => setShopName(e.target.value)} />
-          <TextField id="upd-address" label="Street Address" required value={address} onChange={(e) => setAddress(e.target.value)} />
+          <AddressFields idPrefix="upd-area" value={area} onChange={setArea} showErrors={showAreaErrors} onDistrictRequiredChange={setAreaDistrictRequired} />
+          <TextField id="upd-address" label="Street Address" required placeholder="Unit, building, street" value={address} onChange={(e) => setAddress(e.target.value)} />
           <div>
             <p className="text-sm text-ink mb-2">Map Pin<span className="text-danger">*</span></p>
-            <button type="button" onClick={() => setPickerOpen(true)}
-              className={`flex w-full min-h-14 items-center gap-3 border px-4 py-3 text-left transition-colors hover:bg-sunken ${location ? 'border-sage bg-sage/5' : 'border-dashed border-line-strong bg-surface'}`}>
-              <MapPin size={20} className={location ? 'shrink-0 text-sage' : 'shrink-0 text-ink-muted'} aria-hidden="true" />
-              <span className="min-w-0 flex-1 text-sm text-ink">{location ? location.address || `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}` : 'Pin your shop on the map'}</span>
-              <span className="shrink-0 text-sm underline underline-offset-2">{location ? 'Change' : 'Open map'}</span>
-            </button>
+            <PinTools variant="square" current={location} onPickOnMap={() => setPickerOpen(true)} onPin={setLocation} />
           </div>
         </fieldset>
       )}
 
-      {(FILE_ITEMS.some(([key]) => has(key)) || has('government-id') || has('permits')) && (
+      {(FILE_ITEMS.some(([key]) => has(key)) || has('government-id') || has('selfie') || has('permits')) && (
         <fieldset className="space-y-6">
           <legend className="mobile-h3 text-ink mb-4">Documents</legend>
           {FILE_ITEMS.filter(([key]) => has(key)).map(([key, field, label, hint, accept]) => (
@@ -193,6 +217,14 @@ export default function ApplicationUpdateForm({ token }: { readonly token: strin
                 {GOVERNMENT_ID_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
               <FileField id="upd-government_id" label="Government ID" hint="Front of the ID — photo or PDF" accept="image/*,.pdf" file={files.government_id} onChange={(f) => setFile('government_id', f)} />
+            </div>
+          )}
+          {has('selfie') && (
+            <div>
+              <SelfieCapture id="upd-selfie" idType={govIdType} file={files.selfie_with_id} onChange={(f) => setFile('selfie_with_id', f)} />
+              <p className="mt-2 mobile-caption text-ink-muted">
+                Covered by the privacy consent you gave when you applied. The selfie is deleted 30 days after your application is decided.
+              </p>
             </div>
           )}
           {has('permits') && (
@@ -249,7 +281,7 @@ export default function ApplicationUpdateForm({ token }: { readonly token: strin
           initial={location}
           confirmLabel="Confirm Shop Location"
           onClose={() => setPickerOpen(false)}
-          onConfirm={(loc) => { setLocation(loc); if (!address) setAddress(loc.address); setPickerOpen(false); }}
+          onConfirm={(loc) => { setLocation(loc); setPickerOpen(false); }}
         />
       )}
     </form>

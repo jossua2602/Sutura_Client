@@ -26,7 +26,7 @@ const CATEGORY_TABS = [
   { value: '', label: 'All Alerts' },
   { value: 'applications', label: 'Shop Applications' },
   { value: 'branches', label: 'Branch Locations' },
-  { value: 'upgrades', label: 'Plan Payments' },
+  { value: 'upgrades', label: 'Payments' },
   { value: 'subscriptions', label: 'Subscriptions' },
   { value: 'apparel', label: 'Apparel Categories' },
   { value: 'support', label: 'Support Tickets' },
@@ -131,9 +131,9 @@ export default function AdminNotificationsPage() {
             hint={counts.branches ? 'Pins waiting' : 'All caught up'}
           />
         </Link>
-        <Link href="/admin/upgrades" className="block hover:opacity-90">
+        <Link href="/admin/payments" className="block hover:opacity-90">
           <StatCard
-            label="Plan Payments"
+            label="Payments to verify"
             value={counts.upgrades}
             hint={counts.upgrades ? 'Receipts waiting' : 'All caught up'}
           />

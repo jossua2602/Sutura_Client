@@ -6,6 +6,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { PublicService, StoreBranch, StoreProfile } from '@/components/store-storefront/types';
 import type { ShopPaymentMethod } from '@/components/account/orders/usePayForOrder';
+import { EMPTY_BODY_MEASUREMENTS, hasAnyMeasurement, pickMeasurements, type BodyMeasurements } from '@/lib/garmentMeasurements';
 
 export interface SavedMeasurement {
   id: number;
@@ -27,24 +28,12 @@ export type OrderMode = 'individual' | 'bulk';
 export type MeasurementSource = 'saved' | 'own' | 'shop';
 export type PaymentTerm = 'full' | 'downpayment';
 
-// Same fields as the walk-in wizard's Individual Order measurements.
-export interface IndividualMeasurements {
-  unit: 'in' | 'cm';
-  chest: string;
-  waist: string;
-  hips: string;
-  shoulders: string;
-  length: string;
-  neck: string;
-  sleeve: string;
-  inseam: string;
-}
+// Same fields as the walk-in wizard's Individual Order measurements (see lib/garmentMeasurements).
+export type IndividualMeasurements = BodyMeasurements;
 
 export const BULK_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'] as const;
 const MAX_PHOTOS = 5;
-const EMPTY_MEASUREMENTS: IndividualMeasurements = {
-  unit: 'in', chest: '', waist: '', hips: '', shoulders: '', length: '', neck: '', sleeve: '', inseam: '',
-};
+const EMPTY_MEASUREMENTS: IndividualMeasurements = EMPTY_BODY_MEASUREMENTS;
 
 // Customer-side "Online Order" for one service. Follows the shop's walk-in
 // wizard step for step — Customer Information → Measurements → Order
@@ -55,6 +44,9 @@ export function useServiceOrder(storeId: string) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const serviceId = searchParams.get('service_id');
+  // Set when the order starts from a design ("Place Order" in the design modal).
+  const designName = searchParams.get('design');
+  const designImage = searchParams.get('design_image');
   const { user, hydrated } = useAuthStore();
 
   // Same rule as the booking wizard: sign in before filling anything out.
@@ -81,6 +73,8 @@ export function useServiceOrder(storeId: string) {
 
   // 2 · Measurements
   const [orderMode, setOrderMode] = useState<OrderMode>('individual');
+  // Top / Bottom / Full Set…: decides which body measurements are asked.
+  const [garmentType, setGarmentType] = useState('');
   const [measurementSource, setMeasurementSource] = useState<MeasurementSource>('shop');
   const [measurementId, setMeasurementId] = useState<number | null>(null);
   const [measurements, setMeasurements] = useState<IndividualMeasurements>(EMPTY_MEASUREMENTS);
@@ -95,7 +89,8 @@ export function useServiceOrder(storeId: string) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [materialSource, setMaterialSource] = useState<MaterialChoice>('');
   const [materialDescription, setMaterialDescription] = useState('');
-  const [photos, setPhotos] = useState<string[]>([]);
+  // The design's photo is pre-attached as the first reference photo (the customer can remove it).
+  const [photos, setPhotos] = useState<string[]>(() => (designImage ? [designImage] : []));
   const [uploading, setUploading] = useState(false);
   const [referenceLink, setReferenceLink] = useState('');
   const [notes, setNotes] = useState('');
@@ -209,8 +204,7 @@ export function useServiceOrder(storeId: string) {
     return field.required && field.type !== 'checkbox' && field.label?.trim() && !(answers[field.label] ?? '').trim();
   });
 
-  const hasOwnMeasurement = ['chest', 'waist', 'hips', 'shoulders', 'length', 'neck', 'sleeve', 'inseam']
-    .some((k) => measurements[k as keyof IndividualMeasurements].trim() !== '');
+  const hasOwnMeasurement = hasAnyMeasurement(measurements, garmentType);
 
   const stepReady: Record<number, boolean> = {
     1: contactPhone.replace(/\D/g, '').length >= 7 && (branches.length <= 1 || branchId !== null),
@@ -276,7 +270,8 @@ export function useServiceOrder(storeId: string) {
         store_branch_id: branchId ?? undefined,
         order_mode: orderMode,
         measurement_id: individual && measurementSource === 'saved' ? measurementId ?? undefined : undefined,
-        individual_measurements: individual && measurementSource === 'own' && hasOwnMeasurement ? measurements : undefined,
+        garment_category: garmentType || undefined,
+        individual_measurements: individual && measurementSource === 'own' && hasOwnMeasurement ? pickMeasurements(measurements, garmentType) : undefined,
         size_breakdown: individual ? undefined : sizeBreakdown,
         team_name: individual ? undefined : teamName.trim() || undefined,
         measurement_sheets: individual && measurementSource === 'own' ? sheets : [],
@@ -285,7 +280,8 @@ export function useServiceOrder(storeId: string) {
         material_source: materialSource === 'own' ? 'customer_supplied' : 'store_supplied',
         material_description: materialSource === 'own' ? materialDescription.trim() || undefined : undefined,
         answers: Object.keys(answers).length > 0 ? answers : undefined,
-        notes: notes.trim() || undefined,
+        // Tag the design by name so the shop knows which one the photo is.
+        notes: [designName ? `[Design: ${designName}]` : '', notes.trim()].filter(Boolean).join('\n') || undefined,
         reference_images: photos,
         reference_link: referenceLink.trim() || undefined,
         quantity: individual ? quantity : undefined,
@@ -312,6 +308,8 @@ export function useServiceOrder(storeId: string) {
     loading,
     store,
     service,
+    designName,
+    designImage,
     isRepairOnly,
     step,
     setStep,
@@ -325,6 +323,8 @@ export function useServiceOrder(storeId: string) {
     // 2
     orderMode,
     setOrderMode,
+    garmentType,
+    setGarmentType,
     measurementsNeeded,
     measurementSource,
     setMeasurementSource,

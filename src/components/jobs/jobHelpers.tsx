@@ -183,7 +183,7 @@ export interface Job {
   payment_policy?: PaymentPolicy | null;
   payment_policy_percent?: number | null;
   customer?: { id?: number; name: string; suki_tag?: string | null; phone?: string | null; email?: string | null } | null;
-  service?: { name: string; service_type?: string | null; service_types?: string[] | null } | null;
+  service?: { name: string; service_type?: string | null; service_types?: string[] | null; estimated_days?: number | null } | null;
   service_package?: { id: number; name: string } | null;
   assigned_staff_id?: number | null;
   assigned_to?: number | null;

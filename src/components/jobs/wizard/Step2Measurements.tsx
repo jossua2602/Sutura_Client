@@ -16,22 +16,17 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { CustomerMeasurement, RosterMember } from '../form/types';
+import { GARMENT_TYPE_OPTIONS, GARMENT_CATEGORY_LABELS } from '../jobHelpers';
+import { measurementFieldsFor, type BodyMeasurements } from '@/lib/garmentMeasurements';
 
-export interface IndividualMeasurements {
-  unit: 'in' | 'cm';
-  chest: string;
-  waist: string;
-  hips: string;
-  shoulders: string;
-  length: string;
-  neck: string;
-  sleeve: string;
-  inseam: string;
-}
+export type IndividualMeasurements = BodyMeasurements;
 
 interface Step2MeasurementsProps {
   isBulkOrder: boolean;
   setIsBulkOrder: (bulk: boolean) => void;
+  // Garment Type decides which body measurements are asked.
+  garmentCategory: string;
+  setGarmentCategory: (value: string) => void;
   // Individual Measurements
   measurements: IndividualMeasurements;
   setMeasurements: React.Dispatch<React.SetStateAction<IndividualMeasurements>>;
@@ -60,6 +55,8 @@ const BULK_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 export default function Step2Measurements({
   isBulkOrder,
   setIsBulkOrder,
+  garmentCategory,
+  setGarmentCategory,
   measurements,
   setMeasurements,
   customerMeasurements,
@@ -83,6 +80,7 @@ export default function Step2Measurements({
   const handleMetricChange = (field: keyof IndividualMeasurements, val: string) => {
     setMeasurements((prev) => ({ ...prev, [field]: val }));
   };
+  const fields = measurementFieldsFor(garmentCategory);
 
   const handleSizeQtyChange = (size: string, val: string) => {
     const sanitized = val.replace(/[^0-9]/g, '');
@@ -192,6 +190,32 @@ export default function Step2Measurements({
         </div>
       </div>
 
+      {/* Garment Type: picked here (not in Order Specifications) because it
+          decides which body measurements below are needed. */}
+      <div className="space-y-1.5 max-w-lg">
+        <label htmlFor="garment-type" className="block text-xs font-bold uppercase tracking-wider text-ink-muted">
+          Garment Type
+        </label>
+        <select
+          id="garment-type"
+          value={garmentCategory}
+          onChange={(e) => setGarmentCategory(e.target.value)}
+          className="w-full h-11 px-3.5 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe cursor-pointer shadow-2xs"
+        >
+          <option value="">-- Select Garment Type --</option>
+          {GARMENT_TYPE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+          {garmentCategory && !GARMENT_TYPE_OPTIONS.some((o) => o.value === garmentCategory) && (
+            <option value={garmentCategory}>{GARMENT_CATEGORY_LABELS[garmentCategory] ?? garmentCategory}</option>
+          )}
+        </select>
+        <p className="text-[11px] text-ink-muted">
+          {GARMENT_TYPE_OPTIONS.find((o) => o.value === garmentCategory)?.examples
+            ?? 'Pick Top, Bottom, Full Set, Gown or Outerwear to show only the measurements it needs.'}
+        </p>
+      </div>
+
       {/* INDIVIDUAL MEASUREMENTS FORM */}
       {!isBulkOrder ? (
         <div className="space-y-5 p-5 bg-canvas/30 border border-line/70 rounded-2xl">
@@ -247,127 +271,24 @@ export default function Step2Measurements({
             </div>
           </div>
 
-          {/* 5 Core Required Metrics + 3 Tailoring Metrics Grid */}
+          {/* Only the measurements this Garment Type needs (all of them until one is picked). */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
-            {/* Chest */}
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
-                Chest / Bust ({measurements.unit})
-              </label>
-              <input
-                type="number"
-                step="0.25"
-                value={measurements.chest}
-                onChange={(e) => handleMetricChange('chest', e.target.value)}
-                placeholder="e.g. 38"
-                className="w-full h-10 px-3 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
-              />
-            </div>
-
-            {/* Waist */}
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
-                Waist ({measurements.unit})
-              </label>
-              <input
-                type="number"
-                step="0.25"
-                value={measurements.waist}
-                onChange={(e) => handleMetricChange('waist', e.target.value)}
-                placeholder="e.g. 32"
-                className="w-full h-10 px-3 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
-              />
-            </div>
-
-            {/* Hips */}
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
-                Hips ({measurements.unit})
-              </label>
-              <input
-                type="number"
-                step="0.25"
-                value={measurements.hips}
-                onChange={(e) => handleMetricChange('hips', e.target.value)}
-                placeholder="e.g. 40"
-                className="w-full h-10 px-3 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
-              />
-            </div>
-
-            {/* Shoulders */}
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
-                Shoulders ({measurements.unit})
-              </label>
-              <input
-                type="number"
-                step="0.25"
-                value={measurements.shoulders}
-                onChange={(e) => handleMetricChange('shoulders', e.target.value)}
-                placeholder="e.g. 17.5"
-                className="w-full h-10 px-3 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
-              />
-            </div>
-
-            {/* Garment Length */}
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
-                Garment Length ({measurements.unit})
-              </label>
-              <input
-                type="number"
-                step="0.25"
-                value={measurements.length}
-                onChange={(e) => handleMetricChange('length', e.target.value)}
-                placeholder="e.g. 29"
-                className="w-full h-10 px-3 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
-              />
-            </div>
-
-            {/* Neck */}
-            <div>
-              <label className="block text-xs font-medium text-ink-muted mb-1">
-                Neck (optional)
-              </label>
-              <input
-                type="number"
-                step="0.25"
-                value={measurements.neck}
-                onChange={(e) => handleMetricChange('neck', e.target.value)}
-                placeholder="e.g. 15.5"
-                className="w-full h-10 px-3 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
-              />
-            </div>
-
-            {/* Sleeve */}
-            <div>
-              <label className="block text-xs font-medium text-ink-muted mb-1">
-                Sleeve (optional)
-              </label>
-              <input
-                type="number"
-                step="0.25"
-                value={measurements.sleeve}
-                onChange={(e) => handleMetricChange('sleeve', e.target.value)}
-                placeholder="e.g. 24"
-                className="w-full h-10 px-3 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
-              />
-            </div>
-
-            {/* Inseam */}
-            <div>
-              <label className="block text-xs font-medium text-ink-muted mb-1">
-                Inseam / Outseam
-              </label>
-              <input
-                type="number"
-                step="0.25"
-                value={measurements.inseam}
-                onChange={(e) => handleMetricChange('inseam', e.target.value)}
-                placeholder="e.g. 31"
-                className="w-full h-10 px-3 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
-              />
-            </div>
+            {fields.map((f) => (
+              <div key={f.key}>
+                <label htmlFor={`m-${f.key}`} className="block text-xs font-semibold text-ink mb-1">
+                  {f.label} ({measurements.unit})
+                </label>
+                <input
+                  id={`m-${f.key}`}
+                  type="number"
+                  step="0.25"
+                  value={measurements[f.key]}
+                  onChange={(e) => handleMetricChange(f.key, e.target.value)}
+                  placeholder={`e.g. ${f.hint}`}
+                  className="w-full h-10 px-3 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
+                />
+              </div>
+            ))}
           </div>
         </div>
       ) : (

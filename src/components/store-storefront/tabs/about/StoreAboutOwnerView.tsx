@@ -9,7 +9,7 @@ import SocialLinksCard from './SocialLinksCard';
 import DescriptionCard from './DescriptionCard';
 import ContactInfoCard from './ContactInfoCard';
 import PaymentDetailsCard from './PaymentDetailsCard';
-import BookingFlowCard from './BookingFlowCard';
+import FittingNoticeCard from './FittingNoticeCard';
 import MapLocationInfoCard from './MapLocationInfoCard';
 import BusinessTypeCard from './BusinessTypeCard';
 import SpecializationsCard from './SpecializationsCard';
@@ -18,7 +18,7 @@ import DeclaredBranchesCard from './DeclaredBranchesCard';
 
 type SectionKey =
   | 'social_links' | 'description' | 'contact_info' | 'payment_details'
-  | 'booking_flow' | 'business_type' | 'specializations' | 'visibility';
+  | 'fitting_notice' | 'business_type' | 'specializations' | 'visibility';
 
 interface StoreAboutOwnerViewProps {
   readonly store: StoreProfile;
@@ -110,7 +110,7 @@ export default function StoreAboutOwnerView({ store, isStoreCurrentlyOpen, onOpe
         onBankQrUpload={handleBankQrUpload}
       />
 
-      <BookingFlowCard formData={formData} onChange={handleChange} setFormData={setFormDataWithDirty} {...sectionProps('booking_flow')} />
+      <FittingNoticeCard formData={formData} setFormData={setFormDataWithDirty} {...sectionProps('fitting_notice')} />
 
       <MapLocationInfoCard />
 

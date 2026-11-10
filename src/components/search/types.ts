@@ -22,6 +22,7 @@ export interface RelatedStore {
     latitude: string | null;
     longitude: string | null;
     address?: string;
+    is_main?: boolean;
   }[];
   catalog_items?: {
     id: number;

@@ -9,7 +9,7 @@ import type { UpgradeRequest } from './billingTypes';
 
 const STATUS = {
   pending: { label: 'Waiting for confirmation', Icon: Clock, tone: 'text-amber-800 bg-amber-50 border-amber-300' },
-  approved: { label: 'Approved', Icon: CheckCircle2, tone: 'text-emerald-800 bg-emerald-50 border-emerald-200' },
+  approved: { label: 'Paid', Icon: CheckCircle2, tone: 'text-emerald-800 bg-emerald-50 border-emerald-200' },
   rejected: { label: 'Not accepted', Icon: XCircle, tone: 'text-red-700 bg-red-50 border-red-200' },
 } as const;
 
@@ -31,7 +31,11 @@ export default function UpgradeRequestsSection({ requests, storeId }: Readonly<{
             <li key={r.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-ink">{r.plan?.name ?? 'Plan'} · {r.billing_cycle} · {peso(r.quoted_price)}</p>
-                <p className="text-xs text-ink-muted mt-0.5">Sent {day(r.created_at)}{r.payment_reference ? ` · Ref ${r.payment_reference}` : ''}</p>
+                <p className="text-xs text-ink-muted mt-0.5">
+                  {r.type === 'new_shop' ? 'Sent with your shop application' : `Sent ${day(r.created_at)}`}
+                  {r.payment_reference ? ` · Ref ${r.payment_reference}` : ''}
+                  {r.status === 'approved' && r.billing_period_start && r.billing_period_end ? ` · Covers ${day(r.billing_period_start)} – ${day(r.billing_period_end)}` : ''}
+                </p>
                 {r.status === 'rejected' && r.rejection_reason && <p className="text-xs text-red-700 mt-1">{r.rejection_reason}</p>}
               </div>
               <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 border text-xs font-semibold w-fit ${s.tone}`}><s.Icon size={13} /> {s.label}</span>

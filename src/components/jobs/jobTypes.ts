@@ -44,7 +44,7 @@ export interface Job {
   notes?: string;
   deadline?: string;
   due_date?: string;
-  customer?: { name: string; id: number; email?: string | null; suki_tag?: string | null };
+  customer?: { name: string; id: number; email?: string | null; contact_email?: string | null; suki_tag?: string | null };
   service_package?: { id: number; name: string; bundle_price?: string | null; service_category?: string | null; services?: { id: number; name: string }[] } | null;
   service?: {
     name: string;

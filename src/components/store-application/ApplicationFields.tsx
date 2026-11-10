@@ -8,20 +8,62 @@ import { FileCheck2, Upload } from 'lucide-react';
 export const INPUT_CLASS =
   'w-full min-h-12 px-3.5 py-3 border border-line-strong bg-surface text-ink text-base focus:outline-none focus:border-ink transition-colors';
 
+/** Live-check result shown under a field: red (taken / bad format), green (available), grey (checking). */
+export interface FieldStatus {
+  readonly tone: 'error' | 'success' | 'muted';
+  readonly message: string;
+}
+
 interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   readonly label: string;
   readonly id: string;
+  readonly status?: FieldStatus | null;
 }
 
-export function TextField({ label, id, required, ...inputProps }: TextFieldProps) {
+const STATUS_BORDER: Record<FieldStatus['tone'], string> = {
+  error: 'border-danger! focus:border-danger!',
+  success: 'border-emerald-600! focus:border-emerald-600!',
+  muted: '',
+};
+const STATUS_TEXT: Record<FieldStatus['tone'], string> = {
+  error: 'text-danger',
+  success: 'text-emerald-700',
+  muted: 'text-ink-muted',
+};
+
+export function TextField({ label, id, required, status, ...inputProps }: TextFieldProps) {
+  const messageId = status ? `${id}-status` : undefined;
   return (
     <div>
       <label htmlFor={id} className="block text-sm text-ink mb-2">
         {label}
         {required && <span className="text-danger">*</span>}
       </label>
-      <input id={id} required={required} className={INPUT_CLASS} {...inputProps} />
+      <input
+        id={id}
+        required={required}
+        className={`${INPUT_CLASS} ${status ? STATUS_BORDER[status.tone] : ''}`}
+        aria-invalid={status?.tone === 'error' || undefined}
+        aria-describedby={messageId}
+        {...inputProps}
+      />
+      {status && (
+        <p id={messageId} role="status" aria-live="polite" className={`mt-1.5 text-xs ${STATUS_TEXT[status.tone]}`}>
+          {status.message}
+        </p>
+      )}
     </div>
+  );
+}
+
+export type Requirement = 'Required' | 'Recommended';
+
+/** "— Required" / "— Recommended" after a document's title. */
+export function RequirementTag({ value }: { readonly value: Requirement }) {
+  return (
+    <span className={`ml-1 text-xs font-semibold uppercase tracking-wider ${value === 'Required' ? 'text-danger' : 'text-sage'}`}>
+      <span aria-hidden="true">— </span>{value}
+    </span>
   );
 }
 
@@ -33,17 +75,19 @@ interface FileFieldProps {
   readonly file: File | undefined;
   readonly onChange: (file: File | null) => void;
   readonly required?: boolean;
+  /** Shown after the title instead of the asterisk. */
+  readonly requirement?: Requirement;
 }
 
 // A file input can't be re-populated after the user steps Back, so the
 // chosen file lives in state and `required` only applies while it's empty.
-export function FileField({ id, label, hint, accept, file, onChange, required = true }: FileFieldProps) {
+export function FileField({ id, label, hint, accept, file, onChange, required = true, requirement }: FileFieldProps) {
   const preview = useObjectUrl(file);
   return (
     <div>
       <p className="text-sm text-ink mb-1">
         {label}
-        {required && <span className="text-danger">*</span>}
+        {requirement ? <RequirementTag value={requirement} /> : required && <span className="text-danger">*</span>}
       </p>
       <p className="mobile-caption text-ink-muted mb-2">{hint}</p>
       <label

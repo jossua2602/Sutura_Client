@@ -1,7 +1,7 @@
 import React from 'react';
 import { User, FileText } from 'lucide-react';
 import { CustomerData } from '../customerTypes';
-import { isWalkInEmail, SUKI_TAG_CONFIG } from '../customerHelpers';
+import { customerEmail, SUKI_TAG_CONFIG } from '../customerHelpers';
 
 interface CustomerProfileCardProps {
   readonly customer: CustomerData | null;
@@ -39,7 +39,7 @@ export default function CustomerProfileCard({ customer }: CustomerProfileCardPro
         <div className="p-3.5 bg-canvas border border-line rounded-xl space-y-1 shadow-2xs">
           <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">Email Contact</span>
           <span className="text-ink font-medium block truncate">
-            {customer?.email && !isWalkInEmail(customer.email) ? customer.email : 'Walk-in Client (No Email)'}
+            {customerEmail(customer) || 'Walk-in Client (No Email)'}
           </span>
         </div>
 

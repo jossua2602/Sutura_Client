@@ -32,6 +32,27 @@ export function roleLabel(role: string): string {
     .replace(/^Store\b/, 'Shop'); // store_owner → "Shop Owner" (the key stays store_owner)
 }
 
+/** "Cassandra Velasquez (Head Tailor)" — how staff are listed in assign pickers. */
+export function staffOptionLabel(s: Staff): string {
+  const name = s.user?.name || `Staff #${s.user_id ?? s.user?.id ?? s.id}`;
+  const role = s.is_branch_manager ? 'Branch Manager' : roleLabel(s.role || 'staff');
+  return `${name} (${role})`;
+}
+
+/**
+ * Staff who can take a given job: that job's branch staff plus anyone with no
+ * branch (they work across branches) — same rule as the Create Job Order form.
+ * The currently assigned person is always kept so the picker can show them.
+ */
+export function staffForBranch(list: Staff[], branchId: number | null | undefined, keepUserId?: number | null): Staff[] {
+  return list.filter((s) => {
+    const uid = s.user_id ?? s.user?.id;
+    if (keepUserId && uid === keepUserId) return true;
+    if (!branchId) return true;
+    return s.store_branch_id == null || s.store_branch_id === branchId;
+  });
+}
+
 /**
  * Returns a human-friendly relative last-seen string.
  * < 5 min  → "Online" (green dot)

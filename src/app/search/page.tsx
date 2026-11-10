@@ -185,6 +185,7 @@ function SearchPageContent() {
                 gate={s.gate}
                 userCoords={s.userCoords}
                 department={s.department}
+                district={s.district}
               />
             )}
 

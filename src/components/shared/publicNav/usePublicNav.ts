@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import api from '@/lib/axios';
+import { bindNotificationSoundUnlock, playNotificationSound } from '@/lib/notificationSound';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useCloseOnDesktop } from '@/hooks/useCloseOnDesktop';
 import type { CategoryLeaf, MenuScreen, TopGroup } from './navTypes';
@@ -65,22 +66,32 @@ export function usePublicNav() {
       return;
     }
     let isMounted = true;
+    // null until the first load, so what's already unread doesn't chime.
+    let lastCount: number | null = null;
+    bindNotificationSoundUnlock();
 
-    api
-      .get('/notifications')
-      .then((res) => {
-        if (isMounted) {
-          setUnreadCount(typeof res.data.unread_count === 'number' ? res.data.unread_count : 0);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setUnreadCount(0);
-        }
-      });
+    const load = () => {
+      api
+        .get('/notifications')
+        .then((res) => {
+          if (!isMounted) return;
+          const next = typeof res.data.unread_count === 'number' ? res.data.unread_count : 0;
+          if (lastCount !== null && next > lastCount) playNotificationSound();
+          lastCount = next;
+          setUnreadCount(next);
+        })
+        .catch(() => {
+          // Keep the last known count on a failed poll.
+        });
+    };
+
+    load();
+    // Checked every 30s so a new notification shows (and chimes) without a reload.
+    const interval = setInterval(load, 30_000);
 
     return () => {
       isMounted = false;
+      clearInterval(interval);
     };
   }, [isAuthenticated]);
 

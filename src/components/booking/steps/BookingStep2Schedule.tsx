@@ -14,7 +14,6 @@ import {
 import BookingServiceQuestions from './BookingServiceQuestions';
 import BookingServicePicker from './schedule/BookingServicePicker';
 import BookingBranchSelector from './schedule/BookingBranchSelector';
-import BookingMaterialSelector from './schedule/BookingMaterialSelector';
 import BookingPaymentSection from './review/BookingPaymentSection';
 
 interface UserInfo {
@@ -70,11 +69,6 @@ interface BookingStep2ScheduleProps {
 
 export default function BookingStep2Schedule({
   appointmentType,
-  refName,
-  materialSource,
-  setMaterialSource,
-  materialDescription,
-  setMaterialDescription,
   needsServicePicker,
   typesRequiringService,
   selectedServiceId,
@@ -126,19 +120,6 @@ export default function BookingStep2Schedule({
         orderReference={orderReference}
         setOrderReference={setOrderReference}
       />
-
-      {/* A catalog design being custom-made always needs this answered
-          (regardless of appointmentType — catalog bookings default to
-          ref_type=fitting, which this condition used to miss entirely),
-          same as the general consultation/measurement flows. */}
-      {(appointmentType === 'consultation' || appointmentType === 'measurement' || !!refName) && (
-        <BookingMaterialSelector
-          materialSource={materialSource}
-          setMaterialSource={setMaterialSource}
-          materialDescription={materialDescription}
-          setMaterialDescription={setMaterialDescription}
-        />
-      )}
 
       <BookingBranchSelector
         storeSettings={storeSettings}

@@ -25,7 +25,7 @@ import ChangePasswordGate from '@/components/dashboard/ChangePasswordGate';
 const SIDEBAR_KEY = 'sutura.sidebar';
 
 function DashboardLayoutContent({ children }: { readonly children: React.ReactNode }) {
-  const { user, isAuthenticated, logout, setAuth, token, staffProfile, store } = useAuthStore();
+  const { user, isAuthenticated, logout, setAuth, token, staffProfile, store, hydrated } = useAuthStore();
   const { selectedBranchId } = useBranch();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -66,6 +66,9 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
   }, []);
 
   useEffect(() => {
+    // Wait until this tab's login has been read (or borrowed from another tab):
+    // redirecting before that sent every refresh and new tab to /login.
+    if (!hydrated) return;
     if (!token && !isAuthenticated) {
       router.push('/login');
       return;
@@ -89,7 +92,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
           }
         });
     }
-  }, [token, isAuthenticated, router, setAuth, logout]);
+  }, [hydrated, token, isAuthenticated, router, setAuth, logout]);
 
   const roleNames = user?.roles?.map(r => r.name) || [];
   const isStoreOwner = roleNames.includes('store_owner');
@@ -139,7 +142,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
         // under the finalized target (PAYMENT-WORKFLOW.md Part B) — Staff's
         // role narrows to reading payment_status/balance elsewhere (job
         // detail, appointment detail), never acting on it here.
-        ...((isStoreOwner || isBranchManager) ? [{ name: 'Collect Payments', path: '/dashboard/payments', icon: CreditCard }] : []),
+        ...((isStoreOwner || isBranchManager) ? [{ name: 'Payments', path: '/dashboard/payments', icon: CreditCard }] : []),
       ],
     },
     {

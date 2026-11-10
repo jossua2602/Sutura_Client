@@ -20,7 +20,7 @@ import {
 import type { CatalogItem } from '@/components/catalog/catalogHelpers';
 import type { ServiceData, JobCreateFormData } from '../form/types';
 import type { Staff } from '@/components/staff/staffHelpers';
-import { roleLabel } from '@/components/staff/staffHelpers';
+import { roleLabel, staffOptionLabel } from '@/components/staff/staffHelpers';
 import { GARMENT_CATEGORY_LABELS, GARMENT_TYPE_OPTIONS } from '../jobHelpers';
 
 interface Step3OrderSpecsProps {
@@ -277,33 +277,15 @@ export default function Step3OrderSpecs({
           </select>
         </div>
 
-        {/* Garment Type Dropdown */}
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
-            Garment Type
-          </label>
-          <select
-            value={garmentCategory}
-            onChange={(e) => setGarmentCategory(e.target.value as JobCreateFormData['garment_category'])}
-            aria-describedby="garment-type-examples"
-            className="w-full h-11 px-3.5 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe cursor-pointer shadow-2xs"
-          >
-            <option value="">-- Select Garment Type --</option>
-            {GARMENT_TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-            {/* Set by the "Alterations & Repair" order type above, not picked here. */}
-            {garmentCategory === 'alteration_repair' && (
-              <option value="alteration_repair">{GARMENT_CATEGORY_LABELS.alteration_repair}</option>
-            )}
-          </select>
-          <p id="garment-type-examples" className="mt-1.5 text-[11px] text-ink-muted">
-            {GARMENT_TYPE_OPTIONS.find((o) => o.value === garmentCategory)?.examples
-              ?? 'Pick the broad type: Top, Bottom, Full Set, Gown, Outerwear or Others.'}
-          </p>
-        </div>
+        {/* Garment Type is picked on the Measurements step (it decides which measurements are asked). */}
+        {garmentCategory && (
+          <div>
+            <p className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">Garment Type</p>
+            <p className="h-11 flex items-center text-xs sm:text-sm text-ink">
+              {GARMENT_CATEGORY_LABELS[garmentCategory] ?? garmentCategory}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Fabric Source Segmented Control */}
@@ -477,11 +459,9 @@ export default function Step3OrderSpecs({
             <option value="">— Unassigned (Queue on Production Board) —</option>
             {staffList.map((s) => {
               const sUserId = s.user_id ?? s.user?.id;
-              const sName = s.user?.name || `Tailor #${sUserId}`;
-              const sRole = s.role ? ` — ${roleLabel(s.role)}` : '';
               return (
                 <option key={sUserId} value={String(sUserId)}>
-                  {sName}{sRole}
+                  {staffOptionLabel(s)}
                 </option>
               );
             })}

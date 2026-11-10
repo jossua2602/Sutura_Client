@@ -35,7 +35,7 @@ export default function SubscriptionActivityReport({ report, period }: { readonl
         <StatCard label="Live subscriptions" value={live} hint={`${status.paid} paid · ${status.trial} on trial${status.lapsed ? ` · ${status.lapsed} lapsed` : ''}`} />
         <StatCard label="Monthly list value" value={formatPeso(report.estimated_mrr)} hint="Plan price × live shops (estimate)" />
         <StatCard label="Plan income" value={formatPeso(report.plan_income)} hint={`${report.plan_payments} approved ${report.plan_payments === 1 ? 'payment' : 'payments'} in this period`} />
-        <Link href="/admin/upgrades" className="block hover:bg-canvas">
+        <Link href="/admin/payments" className="block hover:bg-canvas">
           <StatCard label="Plan payments to review" value={report.pending_plan_payments} hint={report.pending_plan_payments ? `${formatPeso(report.pending_plan_income)} waiting for approval` : 'All caught up'} />
         </Link>
       </div>

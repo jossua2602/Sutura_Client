@@ -8,7 +8,8 @@ import JobRejectModal from '@/components/jobs/JobRejectModal';
 import JobKanbanBoard from '@/components/jobs/JobKanbanBoard';
 import JobTrashModal from '@/components/jobs/JobTrashModal';
 import { useJobs } from '@/components/jobs/useJobs';
-import { GARMENT_CATEGORY_LABELS } from '@/components/jobs/jobHelpers';
+import { GARMENT_CATEGORY_LABELS, type Job } from '@/components/jobs/jobHelpers';
+import JobApproveModal from '@/components/jobs/JobApproveModal';
 import { useAuthStore } from '@/store/useAuthStore';
 import { KanbanSkeleton } from '@/components/ui/Skeleton';
 import {
@@ -68,6 +69,8 @@ function JobOrdersPageContent() {
   } = useJobs();
 
   const [trashModalOpen, setTrashModalOpen] = useState(false);
+  // The pending order being approved (asks for due date + staff, like a walk-in).
+  const [approvingJob, setApprovingJob] = useState<Job | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'list' | 'columns'>('kanban');
   const [showFilters, setShowFilters] = useState(false);
   // Home's "Quality checks needed" card deep-links here with ?stage=qc_ironing.
@@ -173,7 +176,7 @@ function JobOrdersPageContent() {
               onHoldJobs={onHoldJobs}
               actionLoadingId={actionLoadingId}
               onUpdateStatus={updateJobStatus}
-              onApprove={handleApproveJob}
+              onApprove={(id) => setApprovingJob(jobs.find((j) => j.id === id) ?? null)}
               onReject={openRejectModal}
               highlightedJobId={null}
               stageFilter={stageFilter}
@@ -196,6 +199,13 @@ function JobOrdersPageContent() {
             localStorage.setItem('sutura_job_stage_notif_prefs', JSON.stringify(DEFAULT_NOTIF_PREFS));
           } catch {}
         }}
+      />
+
+      <JobApproveModal
+        job={approvingJob}
+        staffList={staffList}
+        onClose={() => setApprovingJob(null)}
+        onConfirm={handleApproveJob}
       />
 
       <JobRejectModal

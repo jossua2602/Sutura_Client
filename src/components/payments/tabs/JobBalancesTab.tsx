@@ -11,8 +11,8 @@ import { getPaymentStatusBadge } from '../paymentHelpers';
 interface JobBalancesTabProps {
   balanceSearch: string;
   setBalanceSearch: (val: string) => void;
-  balanceTier: 'all' | 'unpaid' | 'partial';
-  setBalanceTier: (tier: 'all' | 'unpaid' | 'partial') => void;
+  balanceTier: 'all' | 'unpaid' | 'partial' | 'paid';
+  setBalanceTier: (tier: 'all' | 'unpaid' | 'partial' | 'paid') => void;
   balancesLoading: boolean;
   displayedBalances: JobBalanceItem[];
   onSelectJobToPay: (job: JobBalanceItem) => void;
@@ -39,7 +39,7 @@ export default function JobBalancesTab({
         />
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {(['all', 'unpaid', 'partial'] as const).map(tier => (
+          {(['all', 'unpaid', 'partial', 'paid'] as const).map(tier => (
             <button
               key={tier}
               type="button"
@@ -63,8 +63,17 @@ export default function JobBalancesTab({
       ) : displayedBalances.length === 0 ? (
         <div className="text-center py-16 px-4">
           <CheckCircle2 size={28} className="mx-auto text-emerald-600 mb-2 opacity-80" />
-          <h3 className="font-bold text-sm text-ink">No Balances Found</h3>
-          <p className="text-xs text-ink-muted mt-0.5">All active job orders are paid in full.</p>
+          {balanceTier === 'paid' ? (
+            <>
+              <h3 className="font-bold text-sm text-ink">No Fully Paid Orders</h3>
+              <p className="text-xs text-ink-muted mt-0.5">Orders paid in full will show up here.</p>
+            </>
+          ) : (
+            <>
+              <h3 className="font-bold text-sm text-ink">No Balances Found</h3>
+              <p className="text-xs text-ink-muted mt-0.5">All active job orders are paid in full.</p>
+            </>
+          )}
         </div>
       ) : (
         <div>
@@ -97,13 +106,17 @@ export default function JobBalancesTab({
                     {getPaymentStatusBadge(job.payment_status)}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => onSelectJobToPay(job)}
-                    className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
-                  >
-                    <CreditCard size={13} /> <span>Log Payment</span>
-                  </button>
+                  {job.balance > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => onSelectJobToPay(job)}
+                      className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
+                    >
+                      <CreditCard size={13} /> <span>Log Payment</span>
+                    </button>
+                  ) : (
+                    <p className="flex items-center justify-center gap-1 text-xs font-bold text-emerald-700"><CheckCircle2 size={13} /> Paid in full</p>
+                  )}
                 </div>
               );
             })}
@@ -150,13 +163,17 @@ export default function JobBalancesTab({
                         {getPaymentStatusBadge(job.payment_status)}
                       </td>
                       <td className="px-4 py-3 align-middle text-right">
-                        <button
-                          type="button"
-                          onClick={() => onSelectJobToPay(job)}
-                          className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
-                        >
-                          <CreditCard size={12} /> <span>Log Pay</span>
-                        </button>
+                        {job.balance > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => onSelectJobToPay(job)}
+                            className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
+                          >
+                            <CreditCard size={12} /> <span>Log Pay</span>
+                          </button>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700"><CheckCircle2 size={12} /> Paid in full</span>
+                        )}
                       </td>
                     </tr>
                   );

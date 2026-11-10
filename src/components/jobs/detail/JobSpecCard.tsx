@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Job } from '../jobTypes';
 import { GARMENT_CATEGORY_LABELS } from '../jobHelpers';
+import { MEASUREMENT_LABELS } from '@/lib/garmentMeasurements';
 
 interface JobSpecCardProps {
   job: Job;
@@ -116,7 +117,7 @@ export default function JobSpecCard({ job }: JobSpecCardProps) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
             {measurementEntries.map(([label, value]) => (
               <div key={label} className="text-xs">
-                <span className="text-[10px] font-bold text-ink-muted uppercase block truncate">{label}</span>
+                <span className="text-[10px] font-bold text-ink-muted uppercase block truncate">{MEASUREMENT_LABELS[label] ?? label.replaceAll('_', ' ')}</span>
                 <span className="font-semibold text-ink block tabular-nums">{String(value)}</span>
               </div>
             ))}

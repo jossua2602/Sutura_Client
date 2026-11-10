@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
 import { CustomerData } from './customerTypes';
-import { isWalkInCustomer, isWalkInEmail } from './customerHelpers';
+import { isWalkInCustomer, isWalkInEmail, customerEmail } from './customerHelpers';
 
 export { type CustomerData };
 
@@ -106,7 +106,7 @@ export function useCustomers() {
     setEditingId(customer.id);
     setFormData({
       name: customer.name,
-      email: isWalkInEmail(customer.email) ? '' : customer.email,
+      email: customerEmail(customer),
       phone: customer.phone || ''
     });
     setIsModalOpen(true);
@@ -144,7 +144,7 @@ export function useCustomers() {
 
   const filtered = customers.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
-      (c.email && !isWalkInEmail(c.email) && c.email.toLowerCase().includes(search.toLowerCase())) ||
+      (customerEmail(c) && customerEmail(c).toLowerCase().includes(search.toLowerCase())) ||
       (c.phone && c.phone.replace(/\s+/g, '').includes(search.replace(/\s+/g, '')));
 
     if (!matchesSearch) return false;

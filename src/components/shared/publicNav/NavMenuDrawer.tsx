@@ -7,6 +7,8 @@ import Image from 'next/image';
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, User as UserIcon } from 'lucide-react';
 import type { CategoryLeaf, MenuScreen, TopGroup } from './navTypes';
 import { TOP_GROUPS } from './navData';
+
+const MOBILE_HIDDEN_GROUPS = new Set(['men', 'women', 'children']);
 import { getCategoryColumns } from './navColumns';
 import type { User } from '@/store/useAuthStore';
 import { getMediaUrl } from '@/lib/media';
@@ -129,7 +131,8 @@ export default function NavMenuDrawer({
         {/* LEVEL 0: Top Level Categories */}
         {screen.level === 0 && (
           <>
-            {TOP_GROUPS.map((group) => (
+            {/* Mobile menu leaves out Men / Women / Kids (desktop nav keeps them). */}
+            {TOP_GROUPS.filter((group) => !MOBILE_HIDDEN_GROUPS.has(group.key)).map((group) => (
               <button
                 key={group.key}
                 type="button"

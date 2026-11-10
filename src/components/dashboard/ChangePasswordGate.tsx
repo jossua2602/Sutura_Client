@@ -53,11 +53,11 @@ export default function ChangePasswordGate({ loginEmail, onChanged, onLogout }: 
 
         <div>
           <label htmlFor="cp-current" className="block text-sm text-ink mb-2">Temporary password</label>
-          <input id="cp-current" type="password" required autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} className={INPUT_CLASS} />
+          <PasswordInput id="cp-current" autoComplete="current-password" value={current} onChange={setCurrent} />
         </div>
         <div>
           <label htmlFor="cp-new" className="block text-sm text-ink mb-2">New password</label>
-          <input id="cp-new" type="password" required autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} className={INPUT_CLASS} />
+          <PasswordInput id="cp-new" autoComplete="new-password" value={password} onChange={setPassword} />
           <ul className="mt-3 space-y-1.5">
             {PASSWORD_RULES.map((rule) => {
               const met = rule.test(password);
@@ -74,7 +74,7 @@ export default function ChangePasswordGate({ loginEmail, onChanged, onLogout }: 
         </div>
         <div>
           <label htmlFor="cp-confirm" className="block text-sm text-ink mb-2">Confirm new password</label>
-          <input id="cp-confirm" type="password" required autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={INPUT_CLASS} />
+          <PasswordInput id="cp-confirm" autoComplete="new-password" value={confirm} onChange={setConfirm} />
         </div>
 
         <button type="submit" disabled={saving || !meetsPasswordRules(password)} className="btn-primary-mobile rounded-none! w-full bg-ink text-white uppercase tracking-widest text-sm disabled:opacity-40">
@@ -84,6 +84,39 @@ export default function ChangePasswordGate({ loginEmail, onChanged, onLogout }: 
           Sign out
         </button>
       </form>
+    </div>
+  );
+}
+
+// A password box with a Show / Hide toggle — same style as the sign-in page.
+function PasswordInput({ id, value, onChange, autoComplete }: Readonly<{
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  autoComplete: string;
+}>) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        id={id}
+        type={visible ? 'text' : 'password'}
+        required
+        autoComplete={autoComplete}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`${INPUT_CLASS} pr-16`}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-controls={id}
+        aria-pressed={visible}
+        aria-label={visible ? 'Hide password' : 'Show password'}
+        className="absolute right-3.5 top-1/2 -translate-y-1/2 min-h-11 px-1 text-sm text-ink underline underline-offset-2"
+      >
+        {visible ? 'Hide' : 'Show'}
+      </button>
     </div>
   );
 }

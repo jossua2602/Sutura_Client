@@ -2,6 +2,8 @@ import { MapPin } from 'lucide-react';
 import { specializationLabel } from '@/lib/storeSpecializations';
 import { formatPeso } from '@/components/store-application/applicationTypes';
 import { formatDate } from '../useAdminList';
+import { ageFrom } from '@/lib/age';
+import { formatAddress } from '@/lib/formatAddress';
 import type { ApplicationDetail } from './useApplicationDetail';
 
 function Row({ label, children }: { readonly label: string; readonly children: React.ReactNode }) {
@@ -32,14 +34,23 @@ export default function ApplicationSummary({ store }: { readonly store: Applicat
       <Card title="Owner">
         <Row label="Full name">{fullName}</Row>
         <Row label="Date of birth">{app ? formatDate(app.birthday) : null}</Row>
+        <Row label="Age">{app && ageFrom(app.birthday) !== null ? `${ageFrom(app.birthday)} years old` : null}</Row>
         <Row label="Contact email">{store.owner?.contact_email ?? store.owner?.email}</Row>
         <Row label="Shop login">{store.status === 'approved' ? store.owner?.email : 'Issued on approval'}</Row>
         <Row label="Contact">{app?.contact_number ?? store.owner?.phone}</Row>
         <Row label="ID type">{app?.government_id_type}</Row>
+        <Row label="Consent">
+          {app?.privacy_consent_at
+            ? `Privacy consent and terms agreed ${formatDate(app.privacy_consent_at, true)}${app.consent_version ? ` (notice ${app.consent_version})` : ''}`
+            : 'Not recorded (sent before consent was added)'}
+        </Row>
+        {app?.selfie_deleted_at && (
+          <Row label="Selfie">Deleted {formatDate(app.selfie_deleted_at, true)} under the 30-day retention rule</Row>
+        )}
       </Card>
 
       <Card title="Shop">
-        <Row label="Address">{[store.address, store.city, store.province].filter(Boolean).join(', ')}</Row>
+        <Row label="Address">{formatAddress({ address: store.address, city: store.city, province: store.province })}</Row>
         <Row label="Map pin">
           {mapsUrl ? (
             <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 underline underline-offset-2">

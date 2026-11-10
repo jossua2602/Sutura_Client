@@ -68,7 +68,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     step: 'Step 8',
-    title: 'Collect Payments & Review Reports',
+    title: 'Take Payments & Review Reports',
     desc: 'Log payments and verify GCash/bank receipts as they come in, apply discounts, and reject bad receipts with a reason. Reports rolls all of it up — revenue, staff productivity, branch comparisons, and proactive alerts for unclaimed pickups or jobs stuck on hold.',
     icon: CreditCard,
     href: '/dashboard/payments',

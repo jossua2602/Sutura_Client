@@ -458,7 +458,8 @@ export function useJobCreateForm() {
         // Meaningless for a bulk order (its roster already carries one row
         // per person) — always sent as 1 there so a stale non-1 value from
         // switching modes mid-form can't leak into a bulk order's record.
-        quantity: isBulkOrder ? 1 : Math.max(1, Number.parseInt(formData.quantity, 10) || 1),
+        // Individual order: always 1 piece.
+        quantity: 1,
         total_amount: formData.total_amount,
         discount_amount: formData.discount_amount ? Number.parseFloat(formData.discount_amount) : 0,
         balance: balance,

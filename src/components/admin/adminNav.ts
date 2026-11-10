@@ -1,4 +1,4 @@
-import { Banknote, BarChart3, CreditCard, MapPin, FileCheck2, LayoutDashboard, LifeBuoy, ScrollText, Shirt, Store, Users, type LucideIcon } from 'lucide-react';
+import { BarChart3, CreditCard, MapPin, FileCheck2, LayoutDashboard, LifeBuoy, ScrollText, Shirt, Store, Users, Wallet, type LucideIcon } from 'lucide-react';
 
 export interface AdminNavItem {
   name: string;
@@ -20,7 +20,8 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { name: 'Apparel categories', path: '/admin/apparel', icon: Shirt, badgeKey: 'apparel' },
   { name: 'Accounts', path: '/admin/accounts', icon: Users },
   { name: 'Plans', path: '/admin/plans', icon: CreditCard },
-  { name: 'Plan Payments', path: '/admin/upgrades', icon: Banknote, badgeKey: 'upgrades' },
+  // Every GCash payment shops send SUTURA; the badge counts ones waiting for a check.
+  { name: 'Payments', path: '/admin/payments', icon: Wallet, badgeKey: 'upgrades' },
   { name: 'Support', path: '/admin/tickets', icon: LifeBuoy, badgeKey: 'tickets' },
   { name: 'Activity Log', path: '/admin/activity', icon: ScrollText },
 ];

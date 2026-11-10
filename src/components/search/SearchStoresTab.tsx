@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Store, Star, ChevronRight, MapPin } from 'lucide-react';
+import { Store, Star, ChevronRight, MapPin, List, Map as MapIcon } from 'lucide-react';
+import SearchStoresMap from './map/SearchStoresMap';
 import { getMediaUrl } from '@/lib/media';
 import { isStoreOpen } from '@/lib/storeStatus';
 import { specializationLabel } from '@/lib/storeSpecializations';
@@ -64,6 +65,7 @@ interface SearchStoresTabProps {
   readonly gate: (href: string) => string;
   readonly userCoords?: { lat: number; lng: number } | null;
   readonly department?: string;
+  readonly district?: string;
 }
 
 export default function SearchStoresTab({
@@ -77,17 +79,39 @@ export default function SearchStoresTab({
   gate,
   userCoords,
   department = '',
+  district = '',
 }: SearchStoresTabProps) {
+  const [view, setView] = useState<'list' | 'map'>('list');
+
   return (
     <div className="mb-6">
-      <div className="flex items-center justify-between mb-3 px-1">
+      <div className="flex items-center justify-between gap-3 mb-3 px-1 flex-wrap">
         <h2 className="text-base font-bold text-ink">Nearby Shops</h2>
-        <span className="text-sm font-semibold text-ink-body tabular-nums">
-          {stores.length} {stores.length === 1 ? 'result' : 'results'}{userCoords ? ' · nearest first' : ''}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-ink-body tabular-nums">
+            {stores.length} {stores.length === 1 ? 'result' : 'results'}{userCoords ? ' · nearest first' : ''}
+          </span>
+          {/* List / Map: same results, on a map with one pin per shop. */}
+          <div className="flex border border-line" role="group" aria-label="Show shops as">
+            {(['list', 'map'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={view === v}
+                onClick={() => setView(v)}
+                className={`min-h-9 px-3 flex items-center gap-1.5 text-xs font-semibold ${view === v ? 'bg-ink text-white' : 'bg-surface text-ink-body hover:bg-sunken'}`}
+              >
+                {v === 'list' ? <List size={14} /> : <MapIcon size={14} />}
+                {v === 'list' ? 'List' : 'Map'}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {storesLoading ? (
+      {view === 'map' && !storesLoading ? (
+        <SearchStoresMap stores={stores} userCoords={userCoords} gate={gate} district={district} />
+      ) : storesLoading ? (
         // Mirrors the real store row exactly: avatar + name block, then the
         // "Catalog designs" label and its mini-card carousel, so nothing
         // shifts size once the real rows swap in.
@@ -263,9 +287,12 @@ export default function SearchStoresTab({
                     <span className="text-sm font-semibold text-ink truncate">{store.name}</span>
                     <span aria-hidden="true" className="text-ink-faint shrink-0">•</span>
                     <span className="text-sm text-ink-muted shrink-0 tabular-nums">
-                      {effectiveQ.trim()
+                      {/* No design matches the search: the carousel shows the shop's other designs — say so. */}
+                      {effectiveQ.trim() && matchedCount > 0
                         ? `${matchedCount} matching catalog design${matchedCount === 1 ? '' : 's'}`
-                        : `Catalog designs (${matchedCount})`}
+                        : effectiveQ.trim()
+                          ? `No matching designs · other designs (${store.catalog_items_count ?? storeCarouselItems.length})`
+                          : `Catalog designs (${matchedCount})`}
                     </span>
                   </div>
                 ) : null}

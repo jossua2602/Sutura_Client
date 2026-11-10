@@ -1,9 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Check, MapPin, Plus, X } from 'lucide-react';
+import { AlertTriangle, Check, Plus, X } from 'lucide-react';
+import PinTools from '@/components/shared/PinTools';
 import { STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
+import type { SavedLocation } from '@/lib/customerLocation';
+import { areaCenter, displayAddress, EMPTY_PSGC_ADDRESS, pinOutsideCityWarning, type PsgcAddress } from '@/lib/psgc';
+import AddressFields, { addressErrors } from './AddressFields';
 
 // Registration asks only what services the shop offers (the apparel
 // departments come from its catalog later). Still saved as specializations[],
@@ -49,17 +53,52 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
   };
   const removeOther = (name: string) => setShop({ ...shop, custom_services: shop.custom_services.filter((s) => s !== name) });
 
-  // "Branches (Optional)": other locations, name + address each.
+  // "Branches (Optional)": other locations, name + area + street each.
   const MAX_BRANCHES = 10;
-  const addBranch = () => setShop({ ...shop, branches: [...shop.branches, { key: crypto.randomUUID(), name: '', address: '' }] });
-  const updateBranch = (key: string, field: 'name' | 'address', value: string) =>
-    setShop({ ...shop, branches: shop.branches.map((b) => (b.key === key ? { ...b, [field]: value } : b)) });
+  const addBranch = () => setShop({ ...shop, branches: [...shop.branches, { key: crypto.randomUUID(), name: '', address: '', area: EMPTY_PSGC_ADDRESS }] });
+  const updateBranch = (key: string, patch: Partial<{ name: string; address: string; area: PsgcAddress }>) =>
+    setShop({ ...shop, branches: shop.branches.map((b) => (b.key === key ? { ...b, ...patch } : b)) });
   const removeBranch = (key: string) => setShop({ ...shop, branches: shop.branches.filter((b) => b.key !== key) });
+
+  // Address picks: errors show once Continue was pressed. Manila-style cities need a district.
+  const [showAddressErrors, setShowAddressErrors] = useState(false);
+  const [districtRequired, setDistrictRequired] = useState(false);
+  const [branchDistrictRequired, setBranchDistrictRequired] = useState<Record<string, boolean>>({});
+  const onBranchDistrictRequired = useCallback((key: string, required: boolean) =>
+    setBranchDistrictRequired((m) => (m[key] === required ? m : { ...m, [key]: required })), []);
+
+  // "Open map" starts at the chosen barangay (or city) until a pin is set.
+  const [mapStart, setMapStart] = useState<SavedLocation | null>(null);
+  useEffect(() => {
+    if (!shop.area.city_code) { setMapStart(null); return; }
+    let alive = true;
+    areaCenter(shop.area).then((c) => {
+      if (alive) setMapStart(c ? { ...c, address: displayAddress('', shop.area), district: shop.area.district_name } : null);
+    });
+    return () => { alive = false; };
+  }, [shop.area]);
+
+  // Warn (never block) when the pin looks clearly outside the chosen city.
+  const [pinWarning, setPinWarning] = useState('');
+  useEffect(() => {
+    if (!shop.location || !shop.area.city_code) { setPinWarning(''); return; }
+    let alive = true;
+    pinOutsideCityWarning(shop.location, shop.area).then((w) => { if (alive) setPinWarning(w ?? ''); });
+    return () => { alive = false; };
+  }, [shop.location, shop.area]);
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
+    setShowAddressErrors(true);
     if (shop.specializations.length === 0 && shop.custom_services.length === 0) return setError('Pick at least one service your shop offers.');
+    if (Object.keys(addressErrors(shop.area, districtRequired)).length > 0) {
+      document.getElementById('app-area-province')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return setError('Choose your province, city or municipality, and barangay.');
+    }
     if (!shop.location) return setError('Pin your shop on the map so customers can find it.');
+    if (shop.branches.some((b) => Object.keys(addressErrors(b.area, !!branchDistrictRequired[b.key])).length > 0)) {
+      return setError('Each branch needs its province, city or municipality, and barangay.');
+    }
     const names = shop.branches.map((b) => b.name.trim().toLowerCase());
     if (names.some((n, i) => names.indexOf(n) !== i)) return setError('Each branch needs its own name.');
     goTo(3);
@@ -142,25 +181,38 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
       </fieldset>
 
       <div className="space-y-5 border-t border-line pt-5">
+        <AddressFields
+          idPrefix="app-area"
+          value={shop.area}
+          onChange={(area) => { setError(''); setShop({ ...shop, area }); }}
+          showErrors={showAddressErrors}
+          onDistrictRequiredChange={setDistrictRequired}
+        />
         <TextField id="app-address" label="Street Address" required placeholder="Unit, building, street (e.g. Jasmin St)" value={shop.address} onChange={(e) => setShop({ ...shop, address: e.target.value })} />
-        {/* City / province aren't asked: SUTURA only covers Davao City, so the
-            form sends its defaults (Davao City, Davao del Sur — see
-            EMPTY_SHOP in applicationTypes.ts), which the server requires. */}
 
         <div>
           <p className="text-sm text-ink mb-2">Map Pin<span className="text-danger">*</span></p>
-          <button
-            type="button"
-            onClick={() => setPickerOpen(true)}
-            className={`flex w-full min-h-14 items-center gap-3 border px-4 py-3 text-left transition-colors hover:bg-sunken ${shop.location ? 'border-sage bg-sage/5' : 'border-dashed border-line-strong bg-surface'}`}
-          >
-            <MapPin size={20} className={shop.location ? 'shrink-0 text-sage' : 'shrink-0 text-ink-muted'} />
-            <span className="min-w-0 flex-1 text-sm text-ink">
-              {shop.location ? shop.location.address || `${shop.location.lat.toFixed(5)}, ${shop.location.lng.toFixed(5)}` : 'Pin your shop on the map'}
-            </span>
-            <span className="shrink-0 text-sm underline underline-offset-2">{shop.location ? 'Change' : 'Open map'}</span>
-          </button>
+          <PinTools
+            variant="square"
+            current={shop.location}
+            onPickOnMap={() => setPickerOpen(true)}
+            onPin={(pin) => { setError(''); setShop({ ...shop, location: pin }); }}
+          />
+          {!shop.location && mapStart && (
+            <p className="mt-1.5 mobile-caption text-ink-muted">At your shop now? Use your current location. Otherwise the map opens at {shop.area.barangay_name || shop.area.city_name} — move the pin to your exact shop.</p>
+          )}
+          {pinWarning && (
+            <p role="status" className="mt-2 flex gap-2 border border-alert/40 bg-alert/5 px-3 py-2 text-xs text-ink">
+              <AlertTriangle size={14} className="mt-0.5 shrink-0 text-alert" aria-hidden="true" />
+              {pinWarning}
+            </p>
+          )}
         </div>
+        {shop.area.barangay_code && shop.address.trim() && (
+          <p className="mobile-caption text-ink-muted">
+            Shown to customers as: <span className="text-ink">{displayAddress(shop.address, shop.area)}</span>
+          </p>
+        )}
       </div>
 
       <fieldset className="border-t border-line pt-5">
@@ -181,11 +233,18 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
                     <X size={16} aria-hidden="true" />
                   </button>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-4">
                   <TextField id={`app-branch-name-${branch.key}`} label="Branch Name" required maxLength={191} placeholder="e.g. Downtown Branch"
-                    value={branch.name} onChange={(e) => updateBranch(branch.key, 'name', e.target.value)} />
-                  <TextField id={`app-branch-address-${branch.key}`} label="Branch Address" required maxLength={255} placeholder="Unit, building, street"
-                    value={branch.address} onChange={(e) => updateBranch(branch.key, 'address', e.target.value)} />
+                    value={branch.name} onChange={(e) => updateBranch(branch.key, { name: e.target.value })} />
+                  <AddressFields
+                    idPrefix={`app-branch-${branch.key}`}
+                    value={branch.area}
+                    onChange={(area) => { setError(''); updateBranch(branch.key, { area }); }}
+                    showErrors={showAddressErrors}
+                    onDistrictRequiredChange={(required) => onBranchDistrictRequired(branch.key, required)}
+                  />
+                  <TextField id={`app-branch-address-${branch.key}`} label="Street Address" required maxLength={255} placeholder="Unit, building, street"
+                    value={branch.address} onChange={(e) => updateBranch(branch.key, { address: e.target.value })} />
                 </div>
               </li>
             ))}
@@ -206,12 +265,13 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
 
       {pickerOpen && (
         <LocationPicker
-          initial={shop.location}
+          initial={shop.location ?? mapStart}
           confirmLabel="Confirm Shop Location"
           onClose={() => setPickerOpen(false)}
           onConfirm={(loc) => {
             setError('');
-            setShop({ ...shop, location: loc, address: shop.address || loc.address });
+            // The street stays as typed: barangay/city/province now come from the pickers.
+            setShop({ ...shop, location: loc });
             setPickerOpen(false);
           }}
         />

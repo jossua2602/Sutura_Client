@@ -11,6 +11,8 @@ import JobCutSheetCard from './JobCutSheetCard';
 import JobMeasurementCard from './JobMeasurementCard';
 import JobRosterCard from './JobRosterCard';
 import JobOverviewSidebar from './JobOverviewSidebar';
+import JobScheduleCard from './JobScheduleCard';
+import JobClaimsCard from './JobClaimsCard';
 
 interface JobOverviewTabProps {
   job: Job;
@@ -28,6 +30,8 @@ interface JobOverviewTabProps {
   // B) — Staff sees this same Financial Breakdown card read-only, without
   // the "Full Ledger" / "Log Payment" links into the gated tab.
   isOwnerOrManager: boolean;
+  /** Reloads the order after the Due Date & Staff card saves. */
+  onScheduleSaved?: () => void | Promise<void>;
 }
 
 export default function JobOverviewTab({
@@ -43,6 +47,7 @@ export default function JobOverviewTab({
   onGoToFinancials,
   onGoToProduction,
   isOwnerOrManager,
+  onScheduleSaved,
 }: JobOverviewTabProps) {
   return (
     <div className="space-y-5">
@@ -86,6 +91,8 @@ export default function JobOverviewTab({
 
           {/* Right Column (4 cols) */}
           <div className="lg:col-span-4 space-y-6">
+            <JobClaimsCard jobId={job.id} jobStatus={job.status} branchId={job.store_branch_id} isOwnerOrManager={isOwnerOrManager} />
+            {isOwnerOrManager && onScheduleSaved && <JobScheduleCard job={job} onSaved={onScheduleSaved} />}
             <JobRequirementsCard job={job} paymentMet={downpaymentShortfall <= 0} />
             <JobOverviewSidebar
               job={job}

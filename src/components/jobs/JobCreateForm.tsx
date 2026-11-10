@@ -14,6 +14,7 @@ import Step2Measurements, { IndividualMeasurements } from './wizard/Step2Measure
 import Step3OrderSpecs from './wizard/Step3OrderSpecs';
 import Step4InvoicePayment from './wizard/Step4InvoicePayment';
 import type { CustomerData } from './form/types';
+import { EMPTY_BODY_MEASUREMENTS, measurementsFromMetrics, pickMeasurements } from '@/lib/garmentMeasurements';
 import type { CatalogItem } from '@/components/catalog/catalogHelpers';
 import type { Staff } from '@/components/staff/staffHelpers';
 
@@ -27,7 +28,9 @@ export default function JobCreateForm() {
     )
   );
 
-  const staffWithoutAppointment = !canCollectMoney && !searchParams.get('appointment_id');
+  // Staff create orders too (walk-in or from an appointment). They don't take
+  // payments or give discounts here (canCollectMoney), and the server puts the
+  // order in their own branch, unpaid.
   const backHref = returnParam?.startsWith('/dashboard/') && !returnParam.startsWith('//')
     ? returnParam
     : '/dashboard/jobs';
@@ -76,17 +79,7 @@ export default function JobCreateForm() {
   const [phone, setPhone] = useState<string>('');
 
   // Step 2: Measurements
-  const [measurements, setMeasurements] = useState<IndividualMeasurements>({
-    unit: 'in',
-    chest: '',
-    waist: '',
-    hips: '',
-    shoulders: '',
-    length: '',
-    neck: '',
-    sleeve: '',
-    inseam: '',
-  });
+  const [measurements, setMeasurements] = useState<IndividualMeasurements>(EMPTY_BODY_MEASUREMENTS);
   const [selectedMeasurementProfileId, setSelectedMeasurementProfileId] = useState<string>('');
   const [sizeBreakdown, setSizeBreakdown] = useState<Record<string, string>>({
     XS: '',
@@ -178,17 +171,7 @@ export default function JobCreateForm() {
     setFormData((prev) => ({ ...prev, measurement_id: profileId }));
     const profile = customerMeasurements.find((m) => m.id.toString() === profileId);
     if (profile?.metrics) {
-      setMeasurements((prev) => ({
-        ...prev,
-        chest: profile.metrics?.chest || profile.metrics?.bust || '',
-        waist: profile.metrics?.waist || '',
-        hips: profile.metrics?.hips || '',
-        shoulders: profile.metrics?.shoulder || profile.metrics?.shoulders || '',
-        length: profile.metrics?.length || profile.metrics?.shirt_length || '',
-        neck: profile.metrics?.neck || '',
-        sleeve: profile.metrics?.sleeve_length || '',
-        inseam: profile.metrics?.inseam || '',
-      }));
+      setMeasurements((prev) => ({ ...EMPTY_BODY_MEASUREMENTS, unit: prev.unit, ...measurementsFromMetrics(profile.metrics) }));
     }
   };
 
@@ -203,17 +186,7 @@ export default function JobCreateForm() {
         setSelectedMeasurementProfileId(latest.id.toString());
         setFormData((prev) => ({ ...prev, measurement_id: latest.id.toString() }));
         if (latest.metrics) {
-          setMeasurements((prev) => ({
-            ...prev,
-            chest: latest.metrics?.chest || latest.metrics?.bust || prev.chest,
-            waist: latest.metrics?.waist || prev.waist,
-            hips: latest.metrics?.hips || prev.hips,
-            shoulders: latest.metrics?.shoulder || latest.metrics?.shoulders || prev.shoulders,
-            length: latest.metrics?.length || latest.metrics?.shirt_length || prev.length,
-            neck: latest.metrics?.neck || prev.neck,
-            sleeve: latest.metrics?.sleeve_length || prev.sleeve,
-            inseam: latest.metrics?.inseam || prev.inseam,
-          }));
+          setMeasurements((prev) => ({ ...prev, ...measurementsFromMetrics(latest.metrics) }));
         }
       }
     }
@@ -370,9 +343,10 @@ export default function JobCreateForm() {
         assigned_staff_id: assignedStaffId ? Number(assignedStaffId) : null,
         assigned_to: assignedStaffId ? Number(assignedStaffId) : null,
         measurement_id: formData.measurement_id ? Number(formData.measurement_id) : null,
+        // An individual order is one piece for one person; a bulk order counts its size sheet.
         quantity: isBulkOrder
           ? Math.max(1, Object.values(sizeBreakdown).reduce((s, c) => s + (parseInt(c, 10) || 0), 0))
-          : Math.max(1, parseInt(formData.quantity, 10) || 1),
+          : 1,
         total_amount: totalAmt.toFixed(2),
         discount_amount: 0,
         balance: balance.toFixed(2),
@@ -380,7 +354,8 @@ export default function JobCreateForm() {
         notes: formData.notes,
         custom_order_data: {
           ...customFieldValues,
-          individual_measurements: !isBulkOrder ? measurements : null,
+          // Only the measurements asked for this Garment Type.
+          individual_measurements: !isBulkOrder ? pickMeasurements(measurements, formData.garment_category) : null,
           size_breakdown: isBulkOrder ? sizeBreakdown : null,
           measurement_sheets: measurementSheets.length > 0 ? measurementSheets : null,
           team_name: isBulkOrder ? teamName || null : null,
@@ -417,23 +392,6 @@ export default function JobCreateForm() {
       <div className="py-16 text-center text-ink-muted animate-pulse flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-7 h-7 animate-spin text-taupe" />
         <span className="text-sm font-semibold">Loading tailoring workspace...</span>
-      </div>
-    );
-  }
-
-  if (staffWithoutAppointment) {
-    return (
-      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
-        <h1 className="text-2xl font-bold text-ink">Start from an appointment</h1>
-        <p className="text-sm text-ink-muted">
-          Staff create job orders directly from an approved customer appointment.
-        </p>
-        <Link
-          href="/dashboard/appointments"
-          className="inline-flex items-center justify-center h-12 px-6 bg-taupe hover:bg-taupe-hover text-white rounded-xl font-bold text-sm shadow-2xs"
-        >
-          Go to Appointments
-        </Link>
       </div>
     );
   }
@@ -505,6 +463,8 @@ export default function JobCreateForm() {
         <Step2Measurements
           isBulkOrder={isBulkOrder}
           setIsBulkOrder={setIsBulkOrder}
+          garmentCategory={formData.garment_category}
+          setGarmentCategory={(cat) => setFormData((prev) => ({ ...prev, garment_category: cat as typeof prev.garment_category }))}
           measurements={measurements}
           setMeasurements={setMeasurements}
           customerMeasurements={customerMeasurements}
@@ -565,6 +525,7 @@ export default function JobCreateForm() {
           setItemRate={setItemRate}
           paymentTerm={paymentTerm}
           setPaymentTerm={setPaymentTerm}
+          isBulkOrder={isBulkOrder}
           submitting={submitting}
           onBack={() => goToStep(3)}
           onSubmit={handleFinalSubmit}

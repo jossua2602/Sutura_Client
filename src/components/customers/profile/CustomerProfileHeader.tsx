@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Edit2, Mail, Phone, Clock, Scissors } from 'lucide-react';
 import { CustomerData } from '../customerTypes';
-import { isWalkInEmail } from '../customerHelpers';
+import { customerEmail } from '../customerHelpers';
 
 interface CustomerProfileHeaderProps {
   readonly customer: CustomerData | null;
@@ -58,9 +58,9 @@ export default function CustomerProfileHeader({
             </div>
 
             <div className="flex items-center gap-3 text-xs text-ink-muted flex-wrap">
-              {customer?.email && !isWalkInEmail(customer.email) ? (
-                <a href={`mailto:${customer.email}`} className="flex items-center gap-1 hover:text-taupe transition-colors">
-                  <Mail size={12} className="text-ink-faint shrink-0" /> {customer.email}
+              {customerEmail(customer) ? (
+                <a href={`mailto:${customerEmail(customer)}`} className="flex items-center gap-1 hover:text-taupe transition-colors">
+                  <Mail size={12} className="text-ink-faint shrink-0" /> {customerEmail(customer)}
                 </a>
               ) : (
                 <span className="inline-flex items-center text-[9px] font-bold bg-amber-50 text-amber-800 px-1.5 py-0.2 rounded border border-amber-200 uppercase tracking-wider">

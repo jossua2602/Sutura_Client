@@ -13,6 +13,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import api from '@/lib/axios';
+import { bindNotificationSoundUnlock, playNotificationSound } from '@/lib/notificationSound';
 import {
   AppNotification,
   getSenderInfo,
@@ -74,13 +75,18 @@ export default function NotificationBell() {
       const nextCount = typeof res.data.unread_count === 'number'
         ? res.data.unread_count
         : list.filter(n => !n.read_at).length;
-      if (lastCount.current !== null && nextCount > lastCount.current) setBump(b => b + 1);
+      if (lastCount.current !== null && nextCount > lastCount.current) {
+        setBump(b => b + 1);
+        playNotificationSound();
+      }
       lastCount.current = nextCount;
       setUnreadCount(nextCount);
     } catch {
       // Silently fail
     }
   };
+
+  useEffect(() => { bindNotificationSoundUnlock(); }, []);
 
   useEffect(() => {
     // A branch switch is a fresh first load: what it reveals isn't "new", so no toasts.

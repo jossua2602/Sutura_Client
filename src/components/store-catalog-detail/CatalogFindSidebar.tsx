@@ -70,7 +70,6 @@ export default function CatalogFindSidebar({ branches, selectedId, onSelect, sel
             {image && <Image src={getMediaUrl(image)} alt={itemName} fill className="object-cover object-top" />}
           </div>
           <div className="min-w-0">
-            <p className="text-base font-bold text-ink">₱{Number(itemPrice).toLocaleString()}</p>
             <p className="text-sm font-semibold text-ink-body truncate">{itemName}</p>
           </div>
         </div>

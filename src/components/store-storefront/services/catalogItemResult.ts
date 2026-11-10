@@ -22,6 +22,8 @@ export function toCatalogItemResult(item: CatalogListItem, storeId: string, stor
     reviews_avg_rating: item.reviews_avg_rating ?? null,
     order_count: (item as { order_count?: number }).order_count ?? 0,
     images: item.images.map((img) => ({ image_url: img.image_url, is_primary: img.is_primary })),
+    description: item.description ?? null,
+    service_id: item.service_id ?? null,
     fabric_image_url: item.fabric_image_url ?? null,
     distance_km: null,
     store: {

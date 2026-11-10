@@ -6,6 +6,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { usePrintAuthGuard } from '@/hooks/usePrintAuthGuard';
 import { GARMENT_CATEGORY_LABELS } from '@/components/jobs/jobHelpers';
+import { customerEmail } from '@/components/customers/customerHelpers';
 
 interface RosterItem { name?: string; print_name?: string; number?: string | number; size?: string; completed?: boolean; }
 
@@ -22,7 +23,7 @@ interface Job {
   due_date?: string;
   notes?: string;
   created_at: string;
-  customer?: { id: number; name: string; phone?: string; email?: string; };
+  customer?: { id: number; name: string; phone?: string; email?: string; contact_email?: string | null };
   service?: { name: string; };
   assigned_staff?: { name: string; };
   // The real endpoint (JobOrderController@show) returns this as a single
@@ -170,8 +171,8 @@ export default function PrintWorkTicketPage() {
               <tbody>
                 <tr><td className="text-gray-600 pr-3 pb-1 font-medium w-28">Name</td><td className="font-bold pb-1">{job.customer?.name ?? '—'}</td></tr>
                 <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Phone</td><td className="pb-1">{job.customer?.phone ?? '—'}</td></tr>
-                {job.customer?.email && !job.customer.email.startsWith('walkin_') && (
-                  <tr><td className="text-gray-600 pr-3 font-medium">Email</td><td>{job.customer.email}</td></tr>
+                {customerEmail(job.customer) && (
+                  <tr><td className="text-gray-600 pr-3 font-medium">Email</td><td>{customerEmail(job.customer)}</td></tr>
                 )}
               </tbody>
             </table>

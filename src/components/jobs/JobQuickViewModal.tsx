@@ -33,7 +33,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { getMediaUrl } from '@/lib/media';
 import { Job as JobItem, TypeBadge, getDueStatus, normalizeJobStatus } from './jobHelpers';
 import type { Staff } from '@/components/staff/staffHelpers';
-import { roleLabel } from '@/components/staff/staffHelpers';
+import { roleLabel, staffOptionLabel } from '@/components/staff/staffHelpers';
 import { GARMENT_CATEGORY_LABELS } from './jobHelpers';
 
 interface JobQuickViewModalProps {
@@ -411,11 +411,9 @@ export default function JobQuickViewModal({
                       <option value="">— Unassigned (Available in Pool) —</option>
                       {assignableStaff.map((s) => {
                         const sUserId = s.user_id ?? s.user?.id;
-                        const sName = s.user?.name || `Tailor #${sUserId}`;
-                        const sRole = s.role ? ` (${roleLabel(s.role)})` : '';
                         return (
                           <option key={sUserId} value={sUserId}>
-                            {sName}{sRole}
+                            {staffOptionLabel(s)}
                           </option>
                         );
                       })}

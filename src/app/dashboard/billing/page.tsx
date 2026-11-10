@@ -29,18 +29,23 @@ export default function BillingPage() {
     upgradeRequests,
     pendingRequest,
     submitUpgradeRequest,
+    cancelScheduledChange,
     storeId,
   } = useBillingData();
   const [payingFor, setPayingFor] = useState<Plan | null>(null);
 
-  // Moving up to (or renewing) a paid plan takes a GCash payment + receipt;
-  // free plans and step-downs switch right away, as before.
+  // Every paid plan (renewal, upgrade or step down) takes a GCash payment +
+  // receipt; a free plan switches directly (at the end of a paid period).
   const choosePlan = (planId: number) => {
     const plan = plans.find((p) => p.id === planId);
     if (!plan) return;
-    if (planNeedsPayment(plan, currentSubscription ? currentSubscription.plan.price_monthly : null)) setPayingFor(plan);
+    if (planNeedsPayment(plan)) setPayingFor(plan);
     else handleSubscribe(planId);
   };
+  const scheduled = currentSubscription?.scheduled_plan_id ? currentSubscription : null;
+  const endDay = currentSubscription?.ends_at
+    ? new Date(currentSubscription.ends_at).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' })
+    : '';
 
   if (loading) {
     return (
@@ -112,20 +117,36 @@ export default function BillingPage() {
         activePlanId={activePlanId}
         currentPrice={currentSubscription?.plan?.price_monthly ?? 0}
         upgradingTo={upgradingTo}
-        hasPendingRequest={pendingRequest !== null}
+        hasPendingRequest={pendingRequest !== null || Boolean(scheduled?.scheduled_payment_id)}
+        scheduledPlanId={scheduled?.scheduled_plan_id ?? null}
         onSubscribe={choosePlan}
       />
+
+      {scheduled && (
+        <div className="flex flex-col gap-3 border border-line-strong bg-sunken p-4 text-sm text-ink sm:flex-row sm:items-center">
+          <p className="flex-1">
+            Your shop stays on <strong>{currentSubscription?.plan?.name}</strong> until {endDay}, then switches to{' '}
+            <strong>{scheduled.scheduled_plan?.name ?? 'the plan you picked'}</strong>.
+            {scheduled.scheduled_payment_id ? ' That period is already paid for.' : ''}
+          </p>
+          {!scheduled.scheduled_payment_id && (
+            <button type="button" onClick={cancelScheduledChange} className="h-10 shrink-0 border border-line-strong bg-white px-4 text-sm font-medium text-ink hover:bg-canvas cursor-pointer">
+              Keep my current plan
+            </button>
+          )}
+        </div>
+      )}
 
       {pendingRequest && (
         <div className="flex items-start gap-3 p-4 border border-amber-300 bg-amber-50 text-sm text-amber-900">
           <AlertTriangle size={18} className="shrink-0 text-amber-600 mt-0.5" />
-          <p>Your payment for the <strong>{pendingRequest.plan?.name}</strong> plan is waiting for the SUTURA team to confirm. Your plan changes as soon as it is approved.</p>
+          <p>Your payment for the <strong>{pendingRequest.plan?.name}</strong> plan is waiting for the SUTURA team to check it in GCash. You&apos;ll get a notification once it&apos;s confirmed.</p>
         </div>
       )}
 
       <UpgradeRequestsSection requests={upgradeRequests} storeId={storeId} />
 
-      <UpgradePaymentModal plan={payingFor} onClose={() => setPayingFor(null)} onSubmit={submitUpgradeRequest} />
+      <UpgradePaymentModal plan={payingFor} current={currentSubscription} onClose={() => setPayingFor(null)} onSubmit={submitUpgradeRequest} />
 
       <PlanComparisonSection
         plans={plans}

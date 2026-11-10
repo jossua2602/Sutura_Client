@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, Save, X } from 'lucide-react';
+import { Download, Minimize2, Save, X, ZoomIn, ZoomOut } from 'lucide-react';
 
 interface DocumentPreviewModalProps {
   readonly title: string;
@@ -26,6 +26,81 @@ function downloadBlob(url: string, fileName: string) {
   document.body.appendChild(a);
   a.click();
   a.remove();
+}
+
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 4;
+const STEP = 0.5;
+
+/**
+ * The full, unblurred document. Zoom with the − / + buttons, the mouse wheel,
+ * double-click, or the + / − / 0 keys; when zoomed in, drag to move around.
+ */
+function ZoomableImage({ url, title }: { readonly url: string; readonly title: string }) {
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const drag = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+
+  const setZoomClamped = useCallback((next: number) => {
+    const z = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(next * 100) / 100));
+    setZoom(z);
+    if (z === 1) setPan({ x: 0, y: 0 }); // back to fit: re-centre
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === '+' || e.key === '=') setZoomClamped(zoom + STEP);
+      else if (e.key === '-' || e.key === '_') setZoomClamped(zoom - STEP);
+      else if (e.key === '0') setZoomClamped(1);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [zoom, setZoomClamped]);
+
+  const zoomButton = 'flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-sunken hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default';
+
+  return (
+    <div className="relative flex min-h-0 flex-1 flex-col bg-sunken">
+      <div
+        className={`flex h-[80vh] items-center justify-center overflow-hidden select-none ${zoom > 1 ? (drag.current ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-zoom-in'}`}
+        onWheel={(e) => setZoomClamped(zoom + (e.deltaY < 0 ? STEP : -STEP))}
+        onDoubleClick={() => setZoomClamped(zoom > 1 ? 1 : 2)}
+        onPointerDown={(e) => {
+          if (zoom === 1) return;
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+          drag.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
+        }}
+        onPointerMove={(e) => {
+          if (!drag.current) return;
+          setPan({ x: drag.current.panX + (e.clientX - drag.current.x) / zoom, y: drag.current.panY + (e.clientY - drag.current.y) / zoom });
+        }}
+        onPointerUp={() => { drag.current = null; }}
+        onPointerCancel={() => { drag.current = null; }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url}
+          alt={title}
+          draggable={false}
+          style={{ transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)` }}
+          className="max-h-full max-w-full object-contain p-2 sm:p-4 transition-transform duration-150 ease-out"
+        />
+      </div>
+
+      <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-0.5 rounded-xl border border-line bg-surface/95 p-1 shadow-md">
+        <button type="button" onClick={() => setZoomClamped(zoom - STEP)} disabled={zoom <= MIN_ZOOM} aria-label="Zoom out" title="Zoom out (−)" className={zoomButton}>
+          <ZoomOut size={17} aria-hidden="true" />
+        </button>
+        <span className="w-12 text-center text-xs font-semibold tabular-nums text-ink" aria-live="polite">{Math.round(zoom * 100)}%</span>
+        <button type="button" onClick={() => setZoomClamped(zoom + STEP)} disabled={zoom >= MAX_ZOOM} aria-label="Zoom in" title="Zoom in (+)" className={zoomButton}>
+          <ZoomIn size={17} aria-hidden="true" />
+        </button>
+        <button type="button" onClick={() => setZoomClamped(1)} disabled={zoom === 1} aria-label="Fit to screen" title="Fit (0)" className={zoomButton}>
+          <Minimize2 size={16} aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -88,14 +163,14 @@ export default function DocumentPreviewModal({ title, url, blob, type, fileName,
           </div>
         </header>
 
-        <div className="flex min-h-0 flex-1 items-center justify-center bg-sunken p-2 sm:p-4">
-          {type === 'image' ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={url} alt={title} className="max-h-[85vh] max-w-full object-contain" />
-          ) : (
+        {type === 'image' ? (
+          <ZoomableImage url={url} title={title} />
+        ) : (
+          <div className="flex min-h-0 flex-1 items-center justify-center bg-sunken p-2 sm:p-4">
+            {/* The browser's PDF viewer has its own zoom. */}
             <iframe src={url} title={title} className="h-[85vh] w-full border-0 bg-white" />
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>,
     document.body,

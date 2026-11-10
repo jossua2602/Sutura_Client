@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import { Loader2 } from 'lucide-react';
-import { isWalkInEmail } from './customerHelpers';
+import { customerEmail } from './customerHelpers';
 import { CustomerData } from './customerTypes';
 
 interface CustomerFormModalProps {
@@ -21,19 +21,19 @@ export default function CustomerFormModal({
   isSubmitting,
   error,
 }: CustomerFormModalProps) {
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', suki_tag: '' });
+  // No "Client Type" (suki tag) here anymore; editing never sends it, so an existing tag is left as is.
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
 
   useEffect(() => {
     if (editingCustomer && isOpen) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         name: editingCustomer.name,
-        email: isWalkInEmail(editingCustomer.email) ? '' : editingCustomer.email,
+        email: customerEmail(editingCustomer),
         phone: editingCustomer.phone || '',
-        suki_tag: editingCustomer.suki_tag || '',
       });
     } else {
-      setFormData({ name: '', email: '', phone: '', suki_tag: '' });
+      setFormData({ name: '', email: '', phone: '' });
     }
   }, [editingCustomer, isOpen]);
 
@@ -43,7 +43,6 @@ export default function CustomerFormModal({
       name: formData.name,
       email: formData.email.trim() || null,
       phone: formData.phone.trim() || null,
-      suki_tag: formData.suki_tag || null,
     };
     onSubmit(payload);
   };
@@ -99,24 +98,6 @@ export default function CustomerFormModal({
             className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe"
             placeholder="+63 900 000 0000"
           />
-        </div>
-
-        {/* Suki Tag */}
-        <div>
-          <label htmlFor="suki_tag" className="block text-sm font-medium text-ink-body mb-1">
-            Client Type <span className="text-xs text-ink-muted font-normal">(Suki Classification)</span>
-          </label>
-          <select
-            id="suki_tag"
-            value={formData.suki_tag}
-            onChange={e => setFormData({...formData, suki_tag: e.target.value})}
-            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe text-sm"
-          >
-            <option value="">Select client type...</option>
-            <option value="walk_in_retail">Walk-in Retail</option>
-            <option value="b2b_suki">B2B Suki (Bulk / Corporate)</option>
-            <option value="reseller">Reseller (Palengke / Wholesale)</option>
-          </select>
         </div>
 
         <div className="pt-4 flex justify-end gap-3">

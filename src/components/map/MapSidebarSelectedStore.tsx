@@ -134,11 +134,12 @@ export default function MapSidebarSelectedStore({
           </button>
         ) : (
           <div className="space-y-2">
+            {/* Opens the shop's Services tab, where each service has Place Order and booking. */}
             <Link
-              href={gate(`/store/${branch.storeSlug}/book`)}
+              href={`/store/${branch.storeSlug}?tab=services`}
               className="w-full bg-ink hover:bg-ink/90 text-white font-semibold h-9 transition-colors flex items-center justify-center rounded-none text-xs shadow-xs"
             >
-              Book Now
+              View Services
             </Link>
             <div className="flex items-center gap-2">
               {/* Draws the route on our own map (useDirections) instead of leaving for Google Maps. */}

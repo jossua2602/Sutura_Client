@@ -448,10 +448,15 @@ export function useSearchData() {
       if (department) params.department = department;
       if (minPrice) params.min_price = minPrice;
       if (maxPrice) params.max_price = maxPrice;
+      // Shop rating (the stars on each shop card).
+      if (minRating) params.min_rating = minRating;
+      // Low → High / High → Low wins over "nearest first"; distance is still shown.
+      const priceSort = sortBy === 'price_asc' || sortBy === 'price_desc' ? sortBy : '';
+      if (priceSort) params.sort_by = priceSort;
       if (userCoords) {
         params.lat = userCoords.lat;
         params.lng = userCoords.lng;
-        params.sort_by = 'distance';
+        if (!priceSort) params.sort_by = 'distance';
       }
 
       api
@@ -472,7 +477,8 @@ export function useSearchData() {
               }
               return { ...store, distance_km: minKm };
             });
-            list.sort((a, b) => (a.distance_km ?? 9999) - (b.distance_km ?? 9999));
+            // Keep the server's price order when a price sort is on.
+            if (!priceSort) list.sort((a, b) => (a.distance_km ?? 9999) - (b.distance_km ?? 9999));
           }
           setStores(list);
         })
@@ -483,7 +489,7 @@ export function useSearchData() {
     }, 300);
 
     return () => clearTimeout(handle);
-  }, [effectiveQ, district, specialization, department, userCoords, minPrice, maxPrice]);
+  }, [effectiveQ, district, specialization, department, userCoords, minPrice, maxPrice, minRating, sortBy]);
 
   // Services fetch
   useEffect(() => {
@@ -506,6 +512,7 @@ export function useSearchData() {
       if (district) params.district = district;
       if (minPrice) params.min_price = minPrice;
       if (maxPrice) params.max_price = maxPrice;
+      if (minRating) params.min_rating = minRating;
       if (userCoords) {
         params.lat = userCoords.lat;
         params.lng = userCoords.lng;
@@ -532,7 +539,7 @@ export function useSearchData() {
     }, 300);
 
     return () => clearTimeout(handle);
-  }, [effectiveQ, district, specialization, serviceCategory, serviceType, department, userCoords, sortBy, activeTab, minPrice, maxPrice]);
+  }, [effectiveQ, district, specialization, serviceCategory, serviceType, department, userCoords, sortBy, activeTab, minPrice, maxPrice, minRating]);
 
   const activeFilterCount = [
     specialization, garmentType, subcategory, structure, serviceCategory, serviceType,

@@ -3,14 +3,21 @@
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import type { PageMeta } from '../useAdminList';
 
-export function StatCard({ label, value, hint }: { readonly label: string; readonly value: React.ReactNode; readonly hint?: string }) {
+export function StatCard({ label, value, hint, valueClassName = 'text-3xl' }: {
+  readonly label: string; readonly value: React.ReactNode; readonly hint?: string;
+  /** Size of the number; money uses a step smaller so it fits a narrow card. */
+  readonly valueClassName?: string;
+}) {
   return (
-    // h-full + flex column: every card in a grid row is the same height, and
-    // the hint sits on the bottom edge however long the label or hint is.
-    <div className="flex h-full flex-col border-2 border-line-strong bg-surface p-5">
-      <p className="text-eyebrow">{label}</p>
-      <p className="mt-2 text-3xl font-bold text-ink">{value}</p>
-      {hint && <p className="mt-auto pt-1 text-sm text-ink-muted">{hint}</p>}
+    // Same three rows in every card, so they line up across a grid row:
+    // the label always reserves two lines (one-line labels too), so every
+    // number starts at the same height; the hint row always exists (empty if
+    // there's no hint), reserves two lines, and sits on the bottom edge.
+    <div className="flex h-full flex-col gap-2 border-2 border-line-strong bg-surface p-4 sm:p-6">
+      <p className="text-eyebrow min-h-[2lh]">{label}</p>
+      {/* Fixed row height (a 3xl line) so a smaller money value still lines up with the others. */}
+      <p className={`flex min-h-[1.875rem] min-w-0 items-end overflow-hidden whitespace-nowrap font-bold leading-none text-ink tabular-nums ${valueClassName}`}>{value}</p>
+      <p className="mt-auto min-h-[2lh] pt-1 text-sm text-ink-muted" aria-hidden={hint ? undefined : true}>{hint}</p>
     </div>
   );
 }

@@ -4,17 +4,8 @@ import { ImagePlus, Loader2, User, Users, X } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { BULK_SIZES, type IndividualMeasurements, type ServiceOrderState } from './useServiceOrder';
 import { ChoiceCard, SectionLabel, StepIntro, measurementCopy } from './orderUi';
-
-const FIELDS: { key: Exclude<keyof IndividualMeasurements, 'unit'>; label: string; hint: string; optional?: boolean }[] = [
-  { key: 'chest', label: 'Chest / Bust', hint: '38' },
-  { key: 'waist', label: 'Waist', hint: '32' },
-  { key: 'hips', label: 'Hips', hint: '40' },
-  { key: 'shoulders', label: 'Shoulders', hint: '17.5' },
-  { key: 'length', label: 'Garment length', hint: '29' },
-  { key: 'neck', label: 'Neck', hint: '15.5', optional: true },
-  { key: 'sleeve', label: 'Sleeve', hint: '24', optional: true },
-  { key: 'inseam', label: 'Inseam / Outseam', hint: '31', optional: true },
-];
+import { GARMENT_TYPE_OPTIONS } from '@/components/jobs/jobHelpers';
+import { measurementFieldsFor } from '@/lib/garmentMeasurements';
 
 const INPUT = 'w-full h-[48px] bg-canvas border border-line rounded-none px-3 text-base text-ink tabular-nums focus:outline-none focus:border-taupe placeholder:text-ink-faint';
 
@@ -45,6 +36,8 @@ function ModeCard({ on, onClick, Icon, title, text }: Readonly<{ on: boolean; on
 export default function OrderMeasurementsStep({ o }: Readonly<{ o: ServiceOrderState }>) {
   const setField = (key: keyof IndividualMeasurements, value: string) =>
     o.setMeasurements((prev) => ({ ...prev, [key]: value }));
+  // Only the measurements this Garment Type needs (all of them until one is picked).
+  const fields = measurementFieldsFor(o.garmentType);
 
   return (
     <div className="space-y-7">
@@ -57,6 +50,29 @@ export default function OrderMeasurementsStep({ o }: Readonly<{ o: ServiceOrderS
           <ModeCard on={o.orderMode === 'bulk'} onClick={() => o.setOrderMode('bulk')} Icon={Users} title="Bulk order" text="A batch counted by size, for a team or office." />
         </div>
       </fieldset>
+
+      {o.orderMode === 'individual' && (
+        <div className="space-y-2.5">
+          <SectionLabel htmlFor="order-garment-type">
+            Garment type <span className="text-ink-faint font-normal">(Optional)</span>
+          </SectionLabel>
+          <select
+            id="order-garment-type"
+            value={o.garmentType}
+            onChange={(e) => o.setGarmentType(e.target.value)}
+            className={INPUT}
+          >
+            <option value="">Not sure / show all measurements</option>
+            {GARMENT_TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <p className="mobile-caption text-ink-muted">
+            {GARMENT_TYPE_OPTIONS.find((g) => g.value === o.garmentType)?.examples
+              ?? 'Pick what you are ordering so we only ask the measurements it needs.'}
+          </p>
+        </div>
+      )}
 
       {o.orderMode === 'individual' && !o.measurementsNeeded && (
         <p className="text-sm text-ink-body bg-surface border border-line px-4 py-3">{measurementCopy(o.requirements)}</p>
@@ -113,10 +129,10 @@ export default function OrderMeasurementsStep({ o }: Readonly<{ o: ServiceOrderS
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {FIELDS.map((f) => (
+                {fields.map((f) => (
                   <div key={f.key}>
-                    <label htmlFor={`m-${f.key}`} className={`block mobile-caption mb-1 ${f.optional ? 'text-ink-muted' : 'font-semibold text-ink-body'}`}>
-                      {f.label}{f.optional && ' (optional)'}
+                    <label htmlFor={`m-${f.key}`} className="block mobile-caption mb-1 font-semibold text-ink-body">
+                      {f.label}
                     </label>
                     <input
                       id={`m-${f.key}`}

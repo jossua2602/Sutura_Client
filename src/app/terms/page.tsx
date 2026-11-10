@@ -43,6 +43,17 @@ const SECTIONS: LegalSection[] = [
     ),
   },
   {
+    id: 'shop-applications',
+    heading: 'Shop applications',
+    body: (
+      <p>
+        Everything you submit when applying to open a shop, including your documents, government ID and selfie, must
+        be true and must belong to you or your business. We may reject an application, or suspend a shop later, if
+        any of it turns out to be false, borrowed or edited.
+      </p>
+    ),
+  },
+  {
     heading: 'Acceptable use',
     body: (
       <ul>
@@ -76,7 +87,7 @@ export default function TermsPage() {
   return (
     <LegalPage
       title="Terms of Service"
-      updated="October 31, 2026"
+      updated="November 10, 2026"
       intro={
         <p>
           These terms apply to everyone who uses SUTURA at suturaofficial.tech, whether you are ordering from a

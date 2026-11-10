@@ -7,6 +7,7 @@ import api from '@/lib/axios';
 import JobFulfillmentCard from '@/components/jobs/JobFulfillmentCard';
 import JobFinancialsCard from '@/components/jobs/JobFinancialsCard';
 import SendCustomerMessageModal from '@/components/jobs/SendCustomerMessageModal';
+import { customerEmail as customerEmailOf } from '@/components/customers/customerHelpers';
 import { useJobDetail } from '@/components/jobs/useJobDetail';
 import JobDetailHeader from '@/components/jobs/detail/JobDetailHeader';
 import JobDetailTabsNav, { JobDetailTabKey } from '@/components/jobs/detail/JobDetailTabsNav';
@@ -168,6 +169,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             onGoToFinancials={() => setActiveTab('financials')}
             onGoToProduction={() => setActiveTab('production')}
             isOwnerOrManager={isOwnerOrManager}
+            onScheduleSaved={refreshJob}
           />
         )}
 
@@ -227,7 +229,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             orderNumber={job.order_number}
             storeName={store.name || 'SUTURA'}
             customerName={job.customer?.name || 'Customer'}
-            customerEmail={job.customer?.email}
+            customerEmail={customerEmailOf(job.customer) || undefined}
           />
         )}
 

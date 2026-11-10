@@ -8,7 +8,6 @@ import PaymentStatsCards from '@/components/payments/PaymentStatsCards';
 import PaymentTabsNav from '@/components/payments/PaymentTabsNav';
 import DigitalReceiptsTab from '@/components/payments/tabs/DigitalReceiptsTab';
 import JobBalancesTab from '@/components/payments/tabs/JobBalancesTab';
-import CatalogOrdersTab from '@/components/payments/tabs/CatalogOrdersTab';
 import PaymentMethodsTab from '@/components/payments/PaymentMethodsTab';
 import StatementsTab from '@/components/payments/statements/StatementsTab';
 import RejectReasonModal from '@/components/payments/modals/RejectReasonModal';
@@ -49,17 +48,16 @@ export default function PaymentQueuePage() {
     payReviewing,
     setPayReviewing,
     paySubmitting,
-    catalogOrders,
-    catalogLoading,
     handleVerify,
     handleLogPayment,
     filteredBalances,
+    filteredPaidJobs,
+    paidJobsLoading,
+    fetchPaidJobs,
   } = usePayments();
 
-  // Receipt Filter & View States
+  // Receipt filter (receipts are a paged list; Inspect opens one in a popup)
   const [receiptFilter, setReceiptFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
-  const [deckIndex, setDeckIndex] = useState(0);
-  const [receiptViewMode, setReceiptViewMode] = useState<'deck' | 'list'>('deck');
 
   // Reject Confirmation Modal State
   const [rejectingItem, setRejectingItem] = useState<ReceiptItem | null>(null);
@@ -67,7 +65,9 @@ export default function PaymentQueuePage() {
   const [rejectionCustomText, setRejectionCustomText] = useState('');
 
   // Balance Tier Filter & Copy State
-  const [balanceTier, setBalanceTier] = useState<'all' | 'unpaid' | 'partial'>('all');
+  const [balanceTier, setBalanceTier] = useState<'all' | 'unpaid' | 'partial' | 'paid'>('all');
+  // "Paid" lists orders settled in full; they're only loaded when that filter is opened.
+  useEffect(() => { if (balanceTier === 'paid') fetchPaidJobs(); }, [balanceTier, fetchPaidJobs]);
   const [copiedRef, setCopiedRef] = useState<string | null>(null);
 
   const handleCopy = (text: string) => {
@@ -89,22 +89,15 @@ export default function PaymentQueuePage() {
   const approvedCount = useMemo(() => receipts.filter(r => r.payment_status === 'paid' || r.payment_status === 'approved').length, [receipts]);
   const rejectedCount = useMemo(() => receipts.filter(r => r.payment_status === 'rejected').length, [receipts]);
 
-  useEffect(() => {
-    if (deckIndex >= activeReceipts.length && activeReceipts.length > 0) {
-      setDeckIndex(activeReceipts.length - 1);
-    } else if (activeReceipts.length === 0) {
-      setDeckIndex(0);
-    }
-  }, [activeReceipts.length, deckIndex]);
-
   const displayedBalances = useMemo(() => {
+    if (balanceTier === 'paid') return filteredPaidJobs;
     return filteredBalances.filter(job => {
       if (balanceTier === 'all') return true;
       if (balanceTier === 'unpaid') return job.payment_status === 'unpaid';
       if (balanceTier === 'partial') return job.payment_status === 'partial';
       return true;
     });
-  }, [filteredBalances, balanceTier]);
+  }, [filteredBalances, filteredPaidJobs, balanceTier]);
 
   const totalOutstanding = jobBalances.reduce((sum, j) => sum + (j.balance || 0), 0);
   const totalPendingReceipts = receipts
@@ -116,7 +109,9 @@ export default function PaymentQueuePage() {
 
   const confirmRejection = async () => {
     if (!rejectingItem) return;
-    await handleVerify(rejectingItem, 'rejected');
+    // Job-order payments record why they were rejected (the reason shows on the order).
+    const reason = rejectionCustomText.trim() || rejectionReason;
+    await handleVerify(rejectingItem, 'rejected', reason);
     setRejectingItem(null);
     setRejectionCustomText('');
   };
@@ -124,8 +119,8 @@ export default function PaymentQueuePage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Collect Payments"
-        description="Verify GCash and bank receipts, collect job balances, and manage catalog order payments."
+        title="Payments"
+        description="Verify GCash receipts and collect job order balances."
       />
 
       <PaymentStatsCards
@@ -151,10 +146,6 @@ export default function PaymentQueuePage() {
             pendingCount={pendingCount}
             approvedCount={approvedCount}
             rejectedCount={rejectedCount}
-            deckIndex={deckIndex}
-            setDeckIndex={setDeckIndex}
-            receiptViewMode={receiptViewMode}
-            setReceiptViewMode={setReceiptViewMode}
             copiedRef={copiedRef}
             onCopyRef={handleCopy}
             onOpenRejectModal={setRejectingItem}
@@ -169,7 +160,7 @@ export default function PaymentQueuePage() {
             setBalanceSearch={setBalanceSearch}
             balanceTier={balanceTier}
             setBalanceTier={setBalanceTier}
-            balancesLoading={balancesLoading}
+            balancesLoading={balanceTier === 'paid' ? paidJobsLoading : balancesLoading}
             displayedBalances={displayedBalances}
             onSelectJobToPay={job => {
               setLogPaymentJob(job);
@@ -181,13 +172,6 @@ export default function PaymentQueuePage() {
         {activeTab === 'methods' && <PaymentMethodsTab />}
 
         {activeTab === 'statements' && <StatementsTab />}
-
-        {activeTab === 'catalog_orders' && (
-          <CatalogOrdersTab
-            catalogLoading={catalogLoading}
-            catalogOrders={catalogOrders}
-          />
-        )}
       </div>
 
       <RejectReasonModal

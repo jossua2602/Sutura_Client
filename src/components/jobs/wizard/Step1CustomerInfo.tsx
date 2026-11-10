@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Search, UserPlus, Phone, Mail, CheckCircle2, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 import type { CustomerData } from '../form/types';
+import { customerEmail, PH_MOBILE_PATTERN, EMAIL_FORMAT_PATTERN } from '@/components/customers/customerHelpers';
 
 interface Step1CustomerInfoProps {
   storeId?: number;
@@ -88,18 +89,29 @@ export default function Step1CustomerInfo({
   const handleSelectExisting = (cust: CustomerData) => {
     onSelectCustomer(cust);
     setFullName(cust.name);
-    const cleanEmail = cust.email && (cust.email.startsWith('walkin_') && cust.email.endsWith('@sutura.com'))
-      ? ''
-      : (cust.email || '');
-    setEmail(cleanEmail);
+    setEmail(customerEmail(cust));
     setPhone(cust.phone || '');
     setErrorMsg('');
   };
+
+  // Format only. Empty is allowed (no updates by that channel).
+  const phoneFormatError = phone.trim() && !PH_MOBILE_PATTERN.test(phone.trim())
+    ? 'Contact number must be 11 digits starting with 09, e.g. 09663946888.'
+    : '';
+  const emailFormatError = email.trim() && !EMAIL_FORMAT_PATTERN.test(email.trim())
+    ? 'Enter a valid email address, e.g. juan@gmail.com.'
+    : '';
 
   const handleNextClick = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) {
       setErrorMsg('Please enter the customer\'s full name before proceeding.');
+      return;
+    }
+    // The number and email are only where order updates go (they may be shared
+    // with family), so only their format is checked, never whether they're "taken".
+    if (phoneFormatError || emailFormatError) {
+      setErrorMsg(phoneFormatError || emailFormatError);
       return;
     }
     setErrorMsg('');
@@ -227,10 +239,10 @@ export default function Step1CustomerInfo({
                             {cust.phone}
                           </span>
                         )}
-                        {cust.email && !cust.email.startsWith('walkin_') && (
+                        {customerEmail(cust) && (
                           <span className="flex items-center gap-1">
                             <Mail size={10} className="text-ink-faint" />
-                            {cust.email}
+                            {customerEmail(cust)}
                           </span>
                         )}
                       </div>
@@ -286,12 +298,17 @@ export default function Step1CustomerInfo({
               />
               <input
                 type="tel"
+                inputMode="numeric"
+                maxLength={11}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="e.g. 0917 123 4567"
-                className="w-full h-11 pl-10 pr-4 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink placeholder:text-ink-muted/60 focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
+                // Digits only, 11 max (09XXXXXXXXX).
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                placeholder="e.g. 09171234567"
+                aria-invalid={!!phoneFormatError || undefined}
+                className={`w-full h-11 pl-10 pr-4 bg-surface border rounded-xl text-xs sm:text-sm text-ink placeholder:text-ink-muted/60 focus:outline-none focus:ring-1 shadow-2xs ${phoneFormatError && phone.length >= 11 ? 'border-danger focus:ring-danger focus:border-danger' : 'border-line focus:ring-taupe focus:border-taupe'}`}
               />
             </div>
+            <p className="mt-1 text-[11px] text-ink-muted">For order updates by text. Can be shared with family.</p>
           </div>
 
           {/* Email */}
@@ -312,6 +329,7 @@ export default function Step1CustomerInfo({
                 className="w-full h-11 pl-10 pr-4 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink placeholder:text-ink-muted/60 focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
               />
             </div>
+            <p className="mt-1 text-[11px] text-ink-muted">For order updates by email. Can be shared with family.</p>
           </div>
         </div>
       </div>

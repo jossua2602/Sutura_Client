@@ -74,7 +74,8 @@ export default function AdminShell({ children }: { readonly children: React.Reac
       <div className="flex h-16 items-center gap-2.5 border-b border-white/10 px-5">
         <SuturaLogo tone="dark" className="h-8" />
       </div>
-      <nav className="flex-1 overflow-y-auto py-4" aria-label="Admin navigation">
+      {/* Scrolls on short screens, but never shows a scrollbar. */}
+      <nav className="flex-1 overflow-y-auto hide-scrollbar py-4" aria-label="Admin navigation">
         {ADMIN_NAV.map(({ name, path, icon: Icon, badgeKey }) => {
           const active = isActiveAdminPath(pathname, path);
           const badgeCount = badgeKey ? counts[badgeKey] : 0;

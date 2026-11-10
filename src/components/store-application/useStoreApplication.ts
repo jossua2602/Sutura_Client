@@ -25,6 +25,9 @@ export function useStoreApplication() {
   const [planId, setPlanId] = useState<number | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash');
+  // Privacy consent (Documents step) and the terms agreement (last step).
+  const [privacyConsent, setPrivacyConsent] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   // Set once submitted — the owner can't sign in until a System Admin
@@ -57,16 +60,20 @@ export function useStoreApplication() {
 
   const submit = async () => {
     if (!shop.location || !planId) return;
+    if (!privacyConsent) { setError('Please agree to the privacy consent on the Documents step.'); return; }
+    if (!termsAccepted) { setError('Please agree to the Terms of Service before submitting.'); return; }
     setSubmitting(true);
     setError('');
 
     const form = new FormData();
     Object.entries(owner).forEach(([key, value]) => { if (value) form.append(key, value); });
     form.append('store_name', shop.store_name);
-    form.append('address', shop.address);
-    if (shop.barangay.trim()) form.append('barangay', shop.barangay.trim());
-    form.append('city', shop.city);
-    form.append('province', shop.province);
+    form.append('address', shop.address.trim());
+    form.append('province_code', shop.area.province_code);
+    form.append('city_code', shop.area.city_code);
+    if (shop.area.district_code) form.append('district_code', shop.area.district_code);
+    form.append('barangay_code', shop.area.barangay_code);
+    // The pin's district: used for Davao City's district filter when none was picked.
     form.append('district', shop.location.district);
     form.append('latitude', String(shop.location.lat));
     form.append('longitude', String(shop.location.lng));
@@ -75,6 +82,10 @@ export function useStoreApplication() {
     shop.branches.forEach((b, i) => {
       form.append(`branches[${i}][name]`, b.name.trim());
       form.append(`branches[${i}][address]`, b.address.trim());
+      form.append(`branches[${i}][province_code]`, b.area.province_code);
+      form.append(`branches[${i}][city_code]`, b.area.city_code);
+      if (b.area.district_code) form.append(`branches[${i}][district_code]`, b.area.district_code);
+      form.append(`branches[${i}][barangay_code]`, b.area.barangay_code);
     });
     Object.entries(files).forEach(([key, file]) => form.append(key, file));
     permits.forEach((file) => form.append('business_permits[]', file));
@@ -82,6 +93,8 @@ export function useStoreApplication() {
     form.append('plan_id', String(planId));
     form.append('billing_cycle', billingCycle);
     form.append('payment_method', paymentMethod);
+    form.append('privacy_consent', '1');
+    form.append('terms_accepted', '1');
 
     try {
       const res = await api.post('/store-applications', form, {
@@ -100,6 +113,7 @@ export function useStoreApplication() {
     step, goTo, owner, setOwner, shop, setShop, files, setFile, permits, setPermits,
     governmentIdType, setGovernmentIdType, plans, planId, setPlanId, billingCycle, setBillingCycle,
     paymentMethod, setPaymentMethod, error, setError, submitting, submit, submittedTo,
+    privacyConsent, setPrivacyConsent, termsAccepted, setTermsAccepted,
   };
 }
 

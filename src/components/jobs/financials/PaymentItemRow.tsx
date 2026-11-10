@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { CreditCard, Printer, MoreVertical, Pencil, Flag, Check, Receipt, Loader2, ShieldCheck } from 'lucide-react';
 import { Payment } from '../jobTypes';
 import { METHOD_CONFIG } from './financialsTypes';
+import ImageViewerModal from '@/components/shared/ImageViewerModal';
 
 interface PaymentItemRowProps {
   readonly payment: Payment;
@@ -61,6 +62,7 @@ export function PaymentItemRow({
   submittingReject,
   onSubmitReject,
 }: PaymentItemRowProps) {
+  const [viewingReceipt, setViewingReceipt] = React.useState(false);
   const cfg = METHOD_CONFIG[payment.payment_method] ?? {
     label: payment.payment_method,
     icon: <CreditCard size={14} />,
@@ -209,14 +211,13 @@ export function PaymentItemRow({
               </span>
             )}
             {payment.receipt_path && (
-              <a
-                href={payment.receipt_path}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-taupe font-bold hover:underline"
+              <button
+                type="button"
+                onClick={() => setViewingReceipt(true)}
+                className="inline-flex items-center gap-1 text-taupe font-bold hover:underline cursor-pointer"
               >
                 <Receipt size={11} /> Receipt Image
-              </a>
+              </button>
             )}
           </div>
         </div>
@@ -270,6 +271,13 @@ export function PaymentItemRow({
           </div>
         </div>
       )}
+
+      <ImageViewerModal
+        src={viewingReceipt ? payment.receipt_path ?? null : null}
+        title={`${cfg.label} receipt · ₱${Number.parseFloat(String(payment.amount)).toFixed(2)}`}
+        fileName={`receipt-${payment.id}`}
+        onClose={() => setViewingReceipt(false)}
+      />
 
       {payment.rejected_at && (
         <div className="bg-rose-50 border border-rose-200 rounded-lg p-2 text-[10px] text-rose-700">

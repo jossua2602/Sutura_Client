@@ -3,6 +3,7 @@
 import { X } from 'lucide-react';
 import { CatalogOrder } from './orderHelpers';
 import { useAuthStore } from '@/store/useAuthStore';
+import { formatAddress } from '@/lib/formatAddress';
 
 const peso = (v: string | number | null | undefined) =>
   `₱${Number(v ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
@@ -32,7 +33,7 @@ export default function OrderReceiptModal({
             <h2 className="text-xl font-bold tracking-tight">{store?.name ?? 'Sutura Shop'}</h2>
             {store?.address && (
               <p className="text-xs text-gray-600 mt-0.5">
-                {store.address}{store.city ? `, ${store.city}` : ''}
+                {formatAddress({ address: store.address, city: store.city })}
               </p>
             )}
             <p className="mt-2 text-sm font-semibold uppercase tracking-widest">Official Receipt</p>

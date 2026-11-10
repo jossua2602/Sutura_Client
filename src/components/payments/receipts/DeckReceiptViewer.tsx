@@ -5,7 +5,7 @@ import {
   Check, X, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2,
   Copy, CheckCheck, Eye, Receipt, RotateCcw, Loader2
 } from 'lucide-react';
-import { ReceiptItem } from '../usePayments';
+import { receiptKindLabel, ReceiptItem } from '../usePayments';
 import { getMethodBadge } from '../paymentHelpers';
 
 interface DeckReceiptViewerProps {
@@ -90,7 +90,7 @@ export default function DeckReceiptViewer({
         <div className="bg-canvas/30 border border-line rounded-xl p-4 space-y-3">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-surface border border-line text-taupe inline-block mb-1">
-              {receipt.type === 'catalog_order' ? 'Catalog Order' : 'Appointment Deposit'}
+              {receiptKindLabel(receipt)}
             </span>
             <h2 className="text-sm sm:text-base font-bold text-ink">{receipt.itemName}</h2>
           </div>

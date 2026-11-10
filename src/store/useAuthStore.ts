@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { markTabSignedOut } from '@/lib/tabSession';
 
 export interface UserSocialLink {
   label: string;
@@ -145,7 +146,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       else sessionStorage.removeItem('sutura_store');
       if (staffProfile) sessionStorage.setItem('sutura_staff', JSON.stringify(staffProfile));
       else sessionStorage.removeItem('sutura_staff');
-
+      markTabSignedOut('shop', false);
     }
     set({ user, token, store: store || null, staffProfile: staffProfile || null, isAuthenticated: true, hydrated: true });
   },
@@ -157,6 +158,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       sessionStorage.removeItem('sutura_store');
       sessionStorage.removeItem('sutura_staff');
       clearLegacySharedAuth();
+      // This tab stays signed out: it won't borrow another tab's login on reload.
+      markTabSignedOut('shop', true);
     }
     set({ user: null, store: null, staffProfile: null, token: null, isAuthenticated: false, hydrated: true });
   },

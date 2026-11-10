@@ -125,6 +125,16 @@ export function useMapPage() {
     const text = q.trim();
     if (!text) return;
 
+    // Browsing shops: Enter is a plain search. The results list already
+    // follows the typed text, so nothing else happens: the map doesn't move
+    // and no shop is opened. (Looking the words up as an address jumped the
+    // map to unrelated places, so that only runs when picking a location.)
+    if (!isSelectMode) {
+      // Close the phone keyboard so the results list is visible.
+      if (typeof document !== 'undefined') (document.activeElement as HTMLElement | null)?.blur();
+      return;
+    }
+
     const parsed = parseCoordsFromMapsLink(text);
     if (parsed) {
       mapRef.current?.setView([parsed.lat, parsed.lng], 16);

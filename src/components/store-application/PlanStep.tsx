@@ -16,7 +16,7 @@ const METHODS: { value: PaymentMethod; label: string }[] = [
 ];
 
 export default function PlanStep({ app }: { readonly app: StoreApplicationState }) {
-  const { plans, planId, setPlanId, billingCycle, setBillingCycle, paymentMethod, setPaymentMethod, files, setFile, goTo, submit, submitting } = app;
+  const { plans, planId, setPlanId, billingCycle, setBillingCycle, paymentMethod, setPaymentMethod, files, setFile, goTo, submit, submitting, termsAccepted, setTermsAccepted } = app;
   const selected = plans.find((p) => p.id === planId);
   const price = selected ? (billingCycle === 'yearly' ? selected.price_yearly : selected.price_monthly) : 0;
 
@@ -70,7 +70,28 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
           file={files.payment_receipt} onChange={(file) => setFile('payment_receipt', file)} />
       </div>
 
-      <StepActions onBack={() => goTo(3)} nextLabel={submitting ? 'Submitting…' : 'Submit Application'} busy={submitting || !selected} />
+      {/* Declaration + terms, right before Submit: it covers everything entered in every step. */}
+      <label htmlFor="app-terms" className="flex cursor-pointer gap-3 border-t border-line pt-5">
+        <input
+          id="app-terms"
+          type="checkbox"
+          required
+          checked={termsAccepted}
+          onChange={(e) => setTermsAccepted(e.target.checked)}
+          className="mt-0.5 h-5 w-5 shrink-0 accent-ink"
+        />
+        <span className="mobile-body-sm text-ink-body">
+          I confirm that the information and documents I submitted are true and belong to me or my business, and I agree
+          to SUTURA&apos;s{' '}
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-ink underline underline-offset-2">Terms of Service</a>
+          {' '}and{' '}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-ink underline underline-offset-2">Privacy Policy</a>.
+          False information or documents may get the application rejected or the shop suspended.
+          <span className="text-danger">*</span>
+        </span>
+      </label>
+
+      <StepActions onBack={() => goTo(3)} nextLabel={submitting ? 'Submitting…' : 'Submit Application'} busy={submitting || !selected || !termsAccepted} />
     </form>
   );
 }

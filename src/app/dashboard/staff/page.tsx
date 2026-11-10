@@ -200,6 +200,15 @@ export default function StaffPage() {
   const isBranchManager = roleNames.includes('branch_manager') || (user as { staff_profile?: { is_branch_manager?: boolean } })?.staff_profile?.is_branch_manager;
   const canManageStaff = isStoreOwner || isBranchManager;
 
+  // ?new=1 (Home → Quick Actions) opens the Add Staff form right away, then
+  // drops the flag so a refresh doesn't reopen it. The form starts empty.
+  useEffect(() => {
+    if (!canManageStaff || new URLSearchParams(window.location.search).get('new') !== '1') return;
+    setEditingId(null);
+    setShowModal(true);
+    window.history.replaceState(null, '', window.location.pathname);
+  }, [canManageStaff]);
+
   const visibleStaff = Array.isArray(staff) ? staff : [];
 
   const activeStaff = visibleStaff.filter(s => s.is_active);

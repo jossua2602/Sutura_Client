@@ -8,6 +8,7 @@ import OrderTrackingView, { type TrackedOrder } from '@/components/shared/OrderT
 import api from '@/lib/axios';
 import AccountHeader from '@/components/account/AccountHeader';
 import PayForOrder from '@/components/account/orders/PayForOrder';
+import OrderClaimsSection from '@/components/account/orders/OrderClaimsSection';
 
 export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
@@ -63,6 +64,7 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
             active={!['cancelled', 'rejected', 'completed'].includes(order.status)}
             onSubmitted={load}
           />
+          <OrderClaimsSection orderId={Number(id)} storeSlug={order.store?.slug} status={order.status} />
         </>
       )}
     </div>

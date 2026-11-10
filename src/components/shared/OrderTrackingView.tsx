@@ -32,6 +32,12 @@ export interface TrackedOrder {
   // Time-of-day refinement on top of due_date — mainly meaningful for
   // same-day repair ETAs ("ready at 3:00 PM"), additive, not a replacement.
   estimated_ready_at?: string | null;
+  /** Ready for Fitting: visit the shop by this date (YYYY-MM-DD). */
+  fitting_visit_by?: string | null;
+  /** The shop's "come in within N days" setting. */
+  fitting_visit_days?: number | null;
+  /** The shop's Ready-for-Fitting message, already filled in. */
+  fitting_message?: string | null;
   // Which production pipeline to draw (server-derived, same signal as the
   // shop's Kanban). Absent on older responses — buildStages() then infers
   // repair from the status alone.
@@ -244,10 +250,12 @@ export default function OrderTrackingView({ order, stepperLayout = 'horizontal' 
           <div className="mb-3 p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-ink space-y-1 animate-in fade-in duration-200">
             <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-bold text-xs uppercase tracking-wider">
               <Ruler size={15} />
-              <span>Ready for In-Store Fitting</span>
+              <span>Ready for Fitting</span>
             </div>
+            {/* The shop's own message (Booking Flow Setup), with days and date filled in. */}
             <p className="text-xs text-ink-muted leading-relaxed">
-              Your custom garment is ready for your fitting session! Please visit the shop to check sizing and fit before final adjustments.
+              {order.fitting_message
+                || `Your garment is ready for fitting. Please visit our tailoring shop within ${order.fitting_visit_days ?? 7} days.`}
             </p>
           </div>
         )}

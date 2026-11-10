@@ -9,6 +9,7 @@ import 'leaflet/dist/leaflet.css';
 import Link from 'next/link';
 import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
+import { formatAddress } from '@/lib/formatAddress';
 
 // Generic fallback pin — same inline store SVG used when a store has no
 // logo on file, kept visually close to BranchesMap.tsx's own pin so it
@@ -432,7 +433,7 @@ export default function DiscoveryMap({
                     <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.isOpen ? '#22c55e' : '#ef4444', display: 'inline-block' }} />
                     {b.isOpen ? 'Open' : 'Closed'}
                   </div>
-                  {b.address}, {b.city}
+                  {formatAddress({ address: b.address, city: b.city })}
                   {b.landmark ? (
                     <>
                       <br />

@@ -93,7 +93,7 @@ export default function LogPaymentModal({
           <>
             <div className="p-4 space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-ink-muted">Amount</span><strong className="text-ink">₱{parsedAmount.toFixed(2)}</strong></div>
-              <div className="flex justify-between"><span className="text-ink-muted">Method</span><strong className="text-ink capitalize">{payMethod}</strong></div>
+              <div className="flex justify-between"><span className="text-ink-muted">Method</span><strong className="text-ink">{payMethod === 'gcash' ? 'GCash' : 'Cash'}</strong></div>
               {payMethod === 'cash' ? (
                 <>
                   <div className="flex justify-between"><span className="text-ink-muted">Cash Tendered</span><strong className="text-ink">₱{parsedTendered.toFixed(2)}</strong></div>
@@ -106,7 +106,7 @@ export default function LogPaymentModal({
               )}
               {payMethod !== 'cash' && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-[11px] text-amber-800 mt-2">
-                  This {payMethod === 'gcash' ? 'GCash' : 'PayMaya'} payment will be logged as <strong>Pending Verification</strong> — it won&apos;t reduce the balance until an owner or branch manager verifies the receipt.
+                  This GCash payment will be logged as <strong>Pending Verification</strong> — it won&apos;t reduce the balance until an owner or branch manager verifies the receipt.
                 </div>
               )}
             </div>
@@ -173,13 +173,11 @@ export default function LogPaymentModal({
               {/* Payment Method */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-ink">Method</label>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {/* Cash or GCash only (the server accepts just these two for job payments). */}
+                <div className="grid grid-cols-2 gap-2">
                   {[
                     { id: 'cash', label: 'Cash' },
                     { id: 'gcash', label: 'GCash' },
-                    { id: 'paymaya', label: 'Maya' },
-                    { id: 'bank_transfer', label: 'Bank' },
-                    { id: 'other', label: 'Other' },
                   ].map(m => (
                     <button
                       key={m.id}
@@ -254,7 +252,9 @@ export default function LogPaymentModal({
                     </div>
                   )}
                   <div className="space-y-1">
-                    <label htmlFor="pay-reference-input" className="text-xs font-bold text-ink">Reference #</label>
+                    <label htmlFor="pay-reference-input" className="text-xs font-bold text-ink">
+                      Reference # <span className="font-normal text-ink-muted">(optional)</span>
+                    </label>
                     <input
                       id="pay-reference-input"
                       type="text"

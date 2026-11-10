@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FileText, Loader2, Maximize2 } from 'lucide-react';
+import { Eye, FileText, Loader2, Maximize2 } from 'lucide-react';
 import adminApi from '@/lib/adminApi';
 import Badge from '@/components/shared/Badge';
 import { formatDate } from '@/components/admin/useAdminList';
@@ -14,6 +14,7 @@ const LABELS: Record<string, string> = {
   tin: 'TIN / BIR 2303',
   barangay: 'Barangay clearance',
   'government-id': 'Government ID',
+  selfie: 'Selfie with ID',
   receipt: 'Payment receipt',
 };
 
@@ -50,13 +51,33 @@ function useDocumentFile(storeId: number, key: string, previous = false) {
   return { file, failed };
 }
 
-function Preview({ file, failed, type, alt, className = '' }: {
-  readonly file: LoadedFile | null; readonly failed: boolean; readonly type: 'image' | 'pdf'; readonly alt: string; readonly className?: string;
+/**
+ * Documents that carry personal details (IDs, TIN, clearances, receipts…).
+ * Their thumbnails stay blurred; the clear file only shows in the viewer.
+ * The shop front photo is a public storefront picture, so it isn't masked.
+ */
+const isSensitive = (key: string) => key !== 'landmark';
+
+function Preview({ file, failed, type, alt, className = '', masked = false }: {
+  readonly file: LoadedFile | null; readonly failed: boolean; readonly type: 'image' | 'pdf'; readonly alt: string;
+  readonly className?: string; readonly masked?: boolean;
 }) {
   if (failed) return <p className="px-3 text-center text-xs text-danger">Couldn&apos;t load this file</p>;
   if (!file) return <Loader2 className="animate-spin text-ink-faint" />;
-  if (type === 'image') return <img src={file.url} alt={alt} className={`h-full w-full object-cover ${className}`} />;
+  // scale-110 keeps the blur from showing soft, see-through edges inside the frame.
+  if (type === 'image') return <img src={file.url} alt={alt} className={`h-full w-full object-cover ${masked ? 'scale-110 blur-md' : ''} ${className}`} />;
   return <FileText size={36} className={`text-ink-muted ${className}`} />;
+}
+
+/** Dark veil + "View Document" over a masked thumbnail (a visual mask only). */
+function ViewOverlay() {
+  return (
+    <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-ink/30 transition-colors duration-200 group-hover:bg-ink/45">
+      <span className="flex items-center gap-1.5 rounded-full bg-surface/95 px-3 py-1.5 text-xs font-semibold text-ink shadow-sm transition-transform duration-200 group-hover:scale-105">
+        <Eye size={14} aria-hidden="true" /> View Document
+      </span>
+    </span>
+  );
 }
 
 function fileNameFor(storeName: string, label: string, file: LoadedFile | null, type: 'image' | 'pdf', suffix = '') {
@@ -90,6 +111,7 @@ function SingleTile({ storeId, storeName, doc, status }: {
   const { file, failed } = useDocumentFile(storeId, doc.key);
   const [open, setOpen] = useState(false);
   const label = labelFor(doc.key);
+  const masked = isSensitive(doc.key) && doc.type === 'image';
 
   return (
     <figure className={`border-2 bg-surface ${status === 'requested' ? 'border-amber-300' : 'border-line-strong'}`}>
@@ -98,9 +120,10 @@ function SingleTile({ storeId, storeName, doc, status }: {
         onClick={() => setOpen(true)}
         disabled={!file}
         aria-label={`Preview ${label}`}
-        className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-sunken cursor-zoom-in disabled:cursor-default"
+        className="group relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-sunken cursor-zoom-in disabled:cursor-default"
       >
-        <Preview file={file} failed={failed} type={doc.type} alt={label} />
+        <Preview file={file} failed={failed} type={doc.type} alt={label} masked={masked} />
+        {masked && file && <ViewOverlay />}
         {status && <span className="absolute left-2 top-2">{STATUS_BADGE[status]}</span>}
       </button>
       <figcaption className="flex min-h-12 items-center justify-between gap-2 px-3">
@@ -147,6 +170,7 @@ function ComparePane({ storeId, storeName, docKey, label, version, type, caption
 }) {
   const before = version === 'before';
   const { file, failed } = useDocumentFile(storeId, docKey, before);
+  const masked = isSensitive(docKey) && type === 'image';
   const [open, setOpen] = useState(false);
   const title = `${label} — ${before ? 'Before' : 'After (New)'}`;
 
@@ -157,11 +181,12 @@ function ComparePane({ storeId, storeName, docKey, label, version, type, caption
         onClick={() => setOpen(true)}
         disabled={!file}
         aria-label={`Preview ${title}`}
-        className={`relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-sunken cursor-zoom-in disabled:cursor-default ${
+        className={`group relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-sunken cursor-zoom-in disabled:cursor-default ${
           before ? '' : 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-surface'
         }`}
       >
-        <Preview file={file} failed={failed} type={type} alt={title} className={before ? 'opacity-60 grayscale' : ''} />
+        <Preview file={file} failed={failed} type={type} alt={title} className={before ? 'opacity-60 grayscale' : ''} masked={masked} />
+        {masked && file && <ViewOverlay />}
         <span className={`absolute left-2 top-2 rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white ${before ? 'bg-ink/75' : 'bg-emerald-600'}`}>
           {before ? 'Before' : 'After (New)'}
         </span>

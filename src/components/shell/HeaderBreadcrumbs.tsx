@@ -53,7 +53,7 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
   if (pathname.startsWith('/dashboard/appointments')) {
     segments.push({ label: 'Appointments', href: '/dashboard/appointments', icon: Calendar });
   } else if (pathname.startsWith('/dashboard/payments')) {
-    segments.push({ label: 'Collect Payments', href: '/dashboard/payments', icon: CreditCard });
+    segments.push({ label: 'Payments', href: '/dashboard/payments', icon: CreditCard });
   } else if (pathname.startsWith('/dashboard/jobs') || pathname.startsWith('/dashboard/orders')) {
     segments.push({ label: 'Orders', href: '/dashboard/jobs', icon: Scissors });
     if (pathname === '/dashboard/jobs/new') {

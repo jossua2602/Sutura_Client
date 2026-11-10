@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 import adminApi from '@/lib/adminApi';
+import { bindNotificationSoundUnlock, playNotificationSound } from '@/lib/notificationSound';
+
+bindNotificationSoundUnlock();
 
 export interface AdminNotificationItem {
   id: string;
@@ -57,6 +60,9 @@ export const useAdminNotificationStore = create<AdminNotificationState>((set, ge
     try {
       const res = await adminApi.get('/admin/notifications');
       if (res.data?.success && res.data?.data) {
+        // Chime only when the unread count rises after the first load.
+        const nextUnread: number = res.data.data.unread_count ?? 0;
+        if (get().fetched && nextUnread > get().unreadCount) playNotificationSound();
         set({
           notifications: res.data.data.notifications ?? [],
           unreadCount: res.data.data.unread_count ?? 0,

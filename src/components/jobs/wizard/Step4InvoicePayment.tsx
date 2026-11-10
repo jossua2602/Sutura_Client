@@ -20,6 +20,8 @@ interface Step4InvoicePaymentProps {
   setItemRate: (rate: string) => void;
   paymentTerm: 'full' | 'downpayment';
   setPaymentTerm: (term: 'full' | 'downpayment') => void;
+  /** Individual orders are always 1 piece; a bulk order's count comes from its size sheet. */
+  isBulkOrder: boolean;
   submitting: boolean;
   onBack: () => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -32,11 +34,12 @@ export default function Step4InvoicePayment({
   setItemRate,
   paymentTerm,
   setPaymentTerm,
+  isBulkOrder,
   submitting,
   onBack,
   onSubmit,
 }: Step4InvoicePaymentProps) {
-  const qty = Math.max(1, parseInt(formData.quantity, 10) || 1);
+  const qty = isBulkOrder ? Math.max(1, parseInt(formData.quantity, 10) || 1) : 1;
   const rate = parseFloat(itemRate) || 0;
   const rushFee = formData.is_rush ? parseFloat(formData.rush_fee) || 0 : 0;
 
@@ -59,19 +62,6 @@ export default function Step4InvoicePayment({
       total_amount: newTotal,
       downpayment: paymentTerm === 'full' ? newTotal : prev.downpayment,
     }));
-  };
-
-  const handleQtyChange = (newQty: string) => {
-    setFormData((prev) => {
-      const q = Math.max(1, parseInt(newQty, 10) || 1);
-      const newTotal = rate > 0 ? (rate * q + rushFee).toFixed(2) : prev.total_amount;
-      return {
-        ...prev,
-        quantity: newQty,
-        total_amount: newTotal,
-        downpayment: paymentTerm === 'full' ? newTotal : prev.downpayment,
-      };
-    });
   };
 
   const handleRushToggle = (checked: boolean) => {
@@ -130,18 +120,17 @@ export default function Step4InvoicePayment({
             </div>
           </div>
 
-          {/* Quantity */}
+          {/* Quantity — fixed: an individual order is 1 piece; a bulk order totals its size sheet (Step 2). */}
           <div>
-            <label className="block text-xs font-semibold text-ink mb-1.5">
+            <label htmlFor="order-quantity" className="block text-xs font-semibold text-ink mb-1.5">
               Order Quantity (Pieces)
             </label>
             <input
-              type="number"
-              min="1"
-              value={formData.quantity}
-              onChange={(e) => handleQtyChange(e.target.value)}
-              placeholder="1"
-              className="w-full h-11 px-3.5 bg-surface border border-line rounded-xl text-xs sm:text-sm font-bold text-ink focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
+              id="order-quantity"
+              type="text"
+              readOnly
+              value={qty}
+              className="w-full h-11 px-3.5 bg-sunken border border-line rounded-xl text-xs sm:text-sm font-bold text-ink cursor-default focus:outline-none shadow-2xs tabular-nums"
             />
           </div>
 

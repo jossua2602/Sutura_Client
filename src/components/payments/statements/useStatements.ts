@@ -16,8 +16,9 @@ interface Summary {
   totals: { records: number; with_receipt: number; amount: number; verified_amount: number };
 }
 export type Kind = 'job' | 'appointment' | 'catalog';
+// Order payments only: appointment deposits and catalog orders were taken off the Payments page.
 export const KIND_OPTIONS: { id: Kind; label: string }[] = [
-  { id: 'job', label: 'Order payments' }, { id: 'appointment', label: 'Appointment deposits' }, { id: 'catalog', label: 'Catalog orders' },
+  { id: 'job', label: 'Order payments' },
 ];
 
 // A blob error body is JSON text — read the server's message out of it.
@@ -35,7 +36,7 @@ export function useStatements() {
   const toast = useToast();
   const [period, setPeriod] = useState<PeriodId>('this_month');
   const [custom, setCustom] = useState<[string, string]>(() => rangeFor('this_month', null));
-  const [kinds, setKinds] = useState<Kind[]>(['job', 'appointment', 'catalog']);
+  const [kinds, setKinds] = useState<Kind[]>(['job']);
   const [data, setData] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string[]>([]);

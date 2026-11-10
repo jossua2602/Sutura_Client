@@ -8,6 +8,10 @@ import { Check, X } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import PublicNav from '@/components/shared/PublicNav';
 import { PASSWORD_RULES } from '@/lib/passwordRules';
+import { cleanName, nameError, NAME_HINT } from '@/lib/nameRules';
+import { EMAIL_PATTERN, useAvailabilityCheck } from '@/components/store-application/useAvailabilityCheck';
+
+const isEmailFormat = (v: string) => EMAIL_PATTERN.test(v);
 
 export default function RegisterPage() {
   return (
@@ -43,6 +47,34 @@ function RegisterPageContent() {
   useEffect(() => {
     if (wantsStore) router.replace('/register/store');
   }, [wantsStore, router]);
+
+  // Names: letters only (no digits/symbols) — dropped as typed or pasted,
+  // with a short note when something was removed. Same rule on the server.
+  const [nameDropped, setNameDropped] = useState<{ first: boolean; last: boolean }>({ first: false, last: false });
+  const onNameChange = (which: 'first' | 'last', raw: string) => {
+    const { value, changed } = cleanName(raw);
+    setNameDropped((d) => ({ ...d, [which]: changed }));
+    if (which === 'first') setFirstName(value); else setLastName(value);
+  };
+  const firstNameNote = nameError(firstName) || (nameDropped.first ? NAME_HINT : '');
+  const lastNameNote = nameError(lastName) || (nameDropped.last ? NAME_HINT : '');
+  const namesValid = !nameError(firstName) && !nameError(lastName);
+
+  // Live "already registered?" check. Walk-in / guest placeholder accounts
+  // come back available: signing up claims them (same rule as the server).
+  const emailCheck = useAvailabilityCheck('email', email, isEmailFormat, '/auth/check-email');
+  const emailMessage = (() => {
+    switch (emailCheck.state) {
+      case 'taken':
+        return emailCheck.reason === 'shop_login'
+          ? { tone: 'text-danger', text: 'Shop logins can’t be used for a customer account. Use your personal email.' }
+          : { tone: 'text-danger', text: 'This email is already registered.' };
+      case 'available': return { tone: 'text-emerald-700', text: 'Email is available' };
+      case 'invalid': return { tone: 'text-ink-muted', text: 'Enter a valid email address, e.g. you@gmail.com.' };
+      case 'checking': return { tone: 'text-ink-muted', text: 'Checking…' };
+      default: return null;
+    }
+  })();
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -131,11 +163,17 @@ function RegisterPageContent() {
             <input
               id="register-first-name"
               type="text"
+              autoComplete="given-name"
+              maxLength={100}
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              className="w-full px-3.5 py-3 border border-line-strong text-ink text-[15px] focus:outline-none focus:border-ink transition-colors"
+              onChange={(e) => onNameChange('first', e.target.value)}
+              onBlur={() => setFirstName((v) => v.trim())}
+              aria-invalid={!!firstNameNote || undefined}
+              aria-describedby={firstNameNote ? 'register-first-name-note' : undefined}
+              className={`w-full px-3.5 py-3 border text-ink text-[15px] focus:outline-none transition-colors ${firstNameNote ? 'border-danger focus:border-danger' : 'border-line-strong focus:border-ink'}`}
               required
             />
+            {firstNameNote && <p id="register-first-name-note" role="status" className="mt-1.5 text-xs text-danger">{firstNameNote}</p>}
           </div>
 
           <div>
@@ -145,11 +183,17 @@ function RegisterPageContent() {
             <input
               id="register-last-name"
               type="text"
+              autoComplete="family-name"
+              maxLength={100}
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              className="w-full px-3.5 py-3 border border-line-strong text-ink text-[15px] focus:outline-none focus:border-ink transition-colors"
+              onChange={(e) => onNameChange('last', e.target.value)}
+              onBlur={() => setLastName((v) => v.trim())}
+              aria-invalid={!!lastNameNote || undefined}
+              aria-describedby={lastNameNote ? 'register-last-name-note' : undefined}
+              className={`w-full px-3.5 py-3 border text-ink text-[15px] focus:outline-none transition-colors ${lastNameNote ? 'border-danger focus:border-danger' : 'border-line-strong focus:border-ink'}`}
               required
             />
+            {lastNameNote && <p id="register-last-name-note" role="status" className="mt-1.5 text-xs text-danger">{lastNameNote}</p>}
           </div>
 
           <div>
@@ -161,9 +205,31 @@ function RegisterPageContent() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3.5 py-3 border border-line-strong text-ink text-[15px] focus:outline-none focus:border-ink transition-colors"
+              onBlur={emailCheck.checkNow}
+              aria-invalid={emailCheck.state === 'taken' || undefined}
+              aria-describedby={emailMessage ? 'register-email-status' : undefined}
+              className={`w-full px-3.5 py-3 border text-ink text-[15px] focus:outline-none transition-colors ${
+                emailCheck.state === 'taken'
+                  ? 'border-danger focus:border-danger'
+                  : emailCheck.state === 'available'
+                    ? 'border-emerald-600 focus:border-emerald-600'
+                    : 'border-line-strong focus:border-ink'
+              }`}
               required
             />
+            {emailMessage && (
+              <p id="register-email-status" role="status" aria-live="polite" className={`mt-1.5 text-xs ${emailMessage.tone}`}>
+                {emailMessage.text}
+                {emailCheck.state === 'taken' && emailCheck.reason === 'taken' && (
+                  <>
+                    {' '}
+                    <a href={`/login${redirectParam ? `?redirect=${encodeURIComponent(redirectParam)}` : ''}`} className="font-bold underline underline-offset-2">
+                      Sign in instead
+                    </a>
+                  </>
+                )}
+              </p>
+            )}
           </div>
 
           <div>
@@ -221,7 +287,7 @@ function RegisterPageContent() {
 
           <button
             type="submit"
-            disabled={loading || !PASSWORD_RULES.every((r) => r.test(password))}
+            disabled={loading || !namesValid || !PASSWORD_RULES.every((r) => r.test(password)) || emailCheck.state === 'taken' || emailCheck.state === 'checking'}
             className="w-full py-3.5 bg-ink hover:bg-ink/90 text-white text-sm font-bold uppercase tracking-widest transition-colors disabled:opacity-40"
           >
             {loading ? 'Creating account...' : 'Create an Account'}

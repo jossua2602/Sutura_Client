@@ -39,6 +39,10 @@ export interface ApplicationDetail {
     first_name: string; middle_name: string | null; last_name: string; suffix: string | null;
     birthday: string; contact_number: string; billing_cycle: string; quoted_price: string;
     payment_method: string | null; government_id_type: string; reviewed_at: string | null;
+    /** Privacy consent + terms agreement (null on applications sent before they existed). */
+    privacy_consent_at?: string | null; terms_accepted_at?: string | null; consent_version?: string | null;
+    /** Set once the retention job deleted the selfie. */
+    selfie_deleted_at?: string | null;
     requested_plan: { name: string } | null; reviewer: { name: string } | null;
     /** "Request Changes" round: waiting on the owner, or back for review. */
     review_state: 'changes_requested' | 'resubmitted' | null;
@@ -65,6 +69,8 @@ export interface IssuedCredentials {
 export function useApplicationDetail(id: string) {
   const [store, setStore] = useState<ApplicationDetail | null>(null);
   const [documents, setDocuments] = useState<ApplicationDocument[]>([]);
+  // Recommended documents the owner skipped (TIN/BIR, business permits).
+  const [missingDocuments, setMissingDocuments] = useState<{ key: string; label: string }[]>([]);
   const [error, setError] = useState('');
   const [suggestedLogin, setSuggestedLogin] = useState('');
   const [loginDomain, setLoginDomain] = useState('');
@@ -76,6 +82,7 @@ export function useApplicationDetail(id: string) {
       setStore(res.data.data.store);
       setChangeItems(res.data.data.change_items ?? []);
       setDocuments(res.data.data.documents);
+      setMissingDocuments(res.data.data.missing_documents ?? []);
       setSuggestedLogin(res.data.data.suggested_login);
       setLoginDomain(res.data.data.login_domain);
     } catch (err) {
@@ -105,5 +112,5 @@ export function useApplicationDetail(id: string) {
     return { message: res.data.message as string, updateUrl: (res.data.update_url as string | null) ?? null };
   };
 
-  return { store, documents, error, suggestedLogin, loginDomain, changeItems, approve, reject, requestChanges };
+  return { store, documents, missingDocuments, error, suggestedLogin, loginDomain, changeItems, approve, reject, requestChanges };
 }

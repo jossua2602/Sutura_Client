@@ -96,8 +96,9 @@ export default function StoreServicesTab({
     [filteredServices],
   );
 
-  const serviceIds = useMemo(() => new Set(services.map((s) => s.id)), [services]);
-  const looseDesigns = catalogItems.filter((i) => i.service_id == null || !serviceIds.has(i.service_id));
+  // Every design shows here. New designs are always linked to a service (the
+  // Create modal picks one), so filtering to unlinked ones would hide them.
+  const looseDesigns = catalogItems;
 
   // "View Catalog" on a category card opens that category's services in a dialog.
   const [openGroupValue, setOpenGroupValue] = useState<string | null>(null);
@@ -199,9 +200,9 @@ export default function StoreServicesTab({
 
       {!q && looseDesigns.length > 0 && (
         <section aria-labelledby="more-designs-title">
-          <h2 id="more-designs-title" className="text-display text-2xl text-ink">More designs</h2>
-          <p className="mt-1 mb-5 text-sm text-ink-muted">Designs this shop hasn&rsquo;t filed under a service yet.</p>
-          <ShowcaseCarousel label="More designs" resetKey={looseDesigns.length}>
+          <h2 id="more-designs-title" className="text-display text-2xl text-ink">Designs</h2>
+          <p className="mt-1 mb-5 text-sm text-ink-muted">Tap a design to see its photos and description.</p>
+          <ShowcaseCarousel label="Designs" resetKey={looseDesigns.length}>
             {looseDesigns.map(designCard)}
           </ShowcaseCarousel>
         </section>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Info, Loader2, X, Lock, MapPinned, MapPin, CheckCircle2, ImagePlus } from 'lucide-react';
+import { Info, Loader2, X, Lock, MapPin, CheckCircle2, ImagePlus } from 'lucide-react';
+import PinTools from '@/components/shared/PinTools';
 import Link from 'next/link';
 import Modal from '@/components/Modal';
 import api from '@/lib/axios';
@@ -291,19 +292,15 @@ export default function BranchFormModal({
             </p>
           )}
 
-          <button
-            type="button"
-            onClick={() => setShowLocationPicker(true)}
-            className="mt-2 w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border border-taupe text-taupe text-sm font-semibold"
-          >
-            <MapPinned size={15} /> Pick on Map Instead
-          </button>
-
-          {(formData.latitude || formData.longitude) && (
-            <p className="text-xs text-ink-faint mt-2">
-              Current coordinates: {formData.latitude || '—'}, {formData.longitude || '—'}
-            </p>
-          )}
+          <p className="text-xs text-ink-muted mt-3 mb-2">Or, if you&apos;re at the branch now, use your location — or pick it on the map.</p>
+          <PinTools
+            current={pickerInitial}
+            onPickOnMap={() => setShowLocationPicker(true)}
+            onPin={(pin) => {
+              setMapsLinkResolved(false);
+              setFormData(prev => ({ ...prev, latitude: String(pin.lat), longitude: String(pin.lng) }));
+            }}
+          />
 
           <button
             type="button"
@@ -332,7 +329,7 @@ export default function BranchFormModal({
           )}
           <p className="text-xs text-ink-faint mt-1.5 flex items-start gap-1.5">
             <Info size={13} className="mt-0.5 shrink-0" />
-            <span>The location pin is required — without it the branch can&apos;t appear on the map. Pasting the Maps link or picking on the map above is easier than typing coordinates.</span>
+            <span>The location pin is required — without it the branch can&apos;t appear on the map. The Maps link, your current location or the map above are easier than typing coordinates.</span>
           </p>
         </div>
 

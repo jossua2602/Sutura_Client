@@ -6,6 +6,7 @@ import L from '@/lib/leafletSafe';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Star, Phone, Clock, User, ExternalLink, Map as MapIcon, List, Navigation } from 'lucide-react';
 import { StoreBranch, getMapUrl } from './branchHelpers';
+import { formatAddress } from '@/lib/formatAddress';
 
 // 🌟 Special Gold Star Pin for Primary Headquarters (Main Branch)
 const mainPinIcon = L.divIcon({
@@ -217,7 +218,7 @@ export default function BranchesMap({
                     </span>
                   ) : null}
                 </div>
-                <p className="text-xs text-ink-muted truncate mt-0.5">{branch.address}, {branch.city}</p>
+                <p className="text-xs text-ink-muted truncate mt-0.5">{formatAddress({ address: branch.address, city: branch.city })}</p>
                 {branch.manager?.user && (
                   <p className="text-[11px] text-taupe truncate mt-0.5">
                     Mgr: {branch.manager.user.name}
@@ -257,7 +258,7 @@ export default function BranchesMap({
                         ) : null}
                       </div>
                       <p className="text-xs text-ink-body mt-1">
-                        {branch.address}, {branch.city}
+                        {formatAddress({ address: branch.address, city: branch.city })}
                       </p>
                     </div>
                   </div>
@@ -362,7 +363,7 @@ export default function BranchesMap({
                     </div>
                     <h4 className="font-bold text-sm text-ink mb-1">{branch.name}</h4>
                     <p className="text-xs text-ink-body mb-2">
-                      {branch.address}, {branch.city}
+                      {formatAddress({ address: branch.address, city: branch.city })}
                       {branch.landmark ? <span className="block text-ink-muted text-[11px] mt-0.5">Landmark: {branch.landmark}</span> : null}
                     </p>
 
@@ -461,7 +462,7 @@ export default function BranchesMap({
                     ) : null}
                   </div>
                   <p className="text-xs text-ink-muted truncate mt-0.5">
-                    {selectedBranch.address}, {selectedBranch.city}
+                    {formatAddress({ address: selectedBranch.address, city: selectedBranch.city })}
                   </p>
                 </div>
                 {selectedBranch.contact_number && (

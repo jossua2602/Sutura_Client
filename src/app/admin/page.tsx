@@ -35,7 +35,8 @@ export default function AdminOverviewPage() {
 
       {!data ? <ListState loading={!error} error={error} empty={false} emptyText="" /> : (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {/* 2 columns on phones, 3 on tablets, 6 on desktop; cards stretch to one height per row. */}
+          <div className="grid grid-cols-2 items-stretch gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
             <StatCard label="Pending applications" value={pending} hint={pending ? 'Waiting for your review' : 'All caught up'} />
             <Link href="/admin/branches" className="block h-full hover:bg-canvas">
               <StatCard label="Branches to check" value={data.pending_branches} hint={data.pending_branches ? 'Pins waiting for verification' : 'All caught up'} />
@@ -44,7 +45,8 @@ export default function AdminOverviewPage() {
               <StatCard label="Apparel to review" value={data.pending_apparel_types} hint={data.pending_apparel_types ? 'Typed-in names waiting' : 'All caught up'} />
             </Link>
             <StatCard label="Live shops" value={data.stores.approved ?? 0} hint={`${data.stores.rejected ?? 0} rejected`} />
-            <StatCard label="Active subscriptions" value={data.active_subscriptions} />
+            {/* Counts trials too (DashboardController::activeSubscriptions). */}
+            <StatCard label="Active subscriptions" value={data.active_subscriptions} hint="Paid or on trial" />
             <StatCard label="Accounts" value={data.users.total} hint={`${data.users.customers} customers · ${data.users.store_owners} owners`} />
           </div>
 

@@ -98,6 +98,9 @@ export default function OrderSpecsStep({ o }: Readonly<{ o: ServiceOrderState }>
           Reference photos <span className="text-ink-faint font-normal">(Optional, up to {o.maxPhotos})</span>
         </SectionLabel>
         <p className="mobile-caption text-ink-muted -mt-1">A sample design, your old uniform, a patch layout — anything that shows what you want.</p>
+        {o.designName && o.designImage && o.photos.includes(o.designImage) && (
+          <p className="mobile-caption font-semibold text-taupe">Design photo attached: {o.designName}</p>
+        )}
         <div className="flex flex-wrap gap-2">
           {o.photos.map((url) => (
             <div key={url} className="relative w-20 h-20 border border-line overflow-hidden bg-sunken">
