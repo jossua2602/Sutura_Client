@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Camera, CheckCircle2, Loader2, RotateCcw } from 'lucide-react';
 import type { FaceDetector } from '@mediapipe/tasks-vision';
 import { RequirementTag } from './ApplicationFields';
+import { matchSelfieFaces, preloadFaceMatch, rememberFaceMatch, type FaceMatchResult } from './faceMatch';
 
 /**
  * "Take a selfie holding your government ID": live camera capture only (no
@@ -13,7 +14,16 @@ import { RequirementTag } from './ApplicationFields';
  * The face-detection files (~13 MB, pinned version) load only once the camera
  * is opened. If they can't load, the photo is still accepted and the owner is
  * told the review team will check it — never a silent pass.
+ *
+ * A second check (faceMatch.ts) compares the face with the photo on the ID. It only
+ * warns: the owner can always continue, and the review team sees the result.
  */
+
+// Shown under the photo when the face comparison has something the owner can fix.
+const MATCH_HINTS: Partial<Record<FaceMatchResult, string>> = {
+  no_id_face: 'We couldn’t find the photo on your ID. If you can, tap Retake and hold the ID a little closer, with its photo facing the camera. You can also continue; our review team will check it.',
+  no_match: 'Our quick check couldn’t match your face with the photo on your ID. Make sure it’s your own ID, held flat with its photo facing the camera, then tap Retake. You can also continue; our review team will check it.',
+};
 
 const MEDIAPIPE_VERSION = '1.1.1';
 const WASM_BASE = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/wasm`;
@@ -64,6 +74,7 @@ export default function SelfieCapture({ id, file, idType, onChange }: {
   const [phase, setPhase] = useState<Phase>(file ? 'done' : 'idle');
   const [message, setMessage] = useState('');
   const [note, setNote] = useState('');
+  const [hint, setHint] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
 
   // Preview of the accepted photo (also after stepping Back and returning).
@@ -84,6 +95,7 @@ export default function SelfieCapture({ id, file, idType, onChange }: {
   const startCamera = async () => {
     setMessage('');
     setNote('');
+    setHint('');
     if (!globalThis.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
       setPhase('error');
       setMessage('The camera only works on a secure (https) page in an up-to-date browser. Open SUTURA in Chrome, Safari, or Edge.');
@@ -97,6 +109,7 @@ export default function SelfieCapture({ id, file, idType, onChange }: {
         .then((d) => { detectorRef.current = { detector: d, failed: false }; })
         .catch(() => { detectorRef.current = { detector: null, failed: true }; });
     }
+    preloadFaceMatch();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } },
@@ -164,6 +177,9 @@ export default function SelfieCapture({ id, file, idType, onChange }: {
       setNote('The automatic face check couldn’t load on this connection. Our review team will check your photo instead.');
     }
 
+    const match = await matchSelfieFaces(canvas);
+    setHint(MATCH_HINTS[match.result] ?? '');
+
     canvas.toBlob((blob) => {
       if (!blob) {
         setPhase('live');
@@ -171,7 +187,9 @@ export default function SelfieCapture({ id, file, idType, onChange }: {
         return;
       }
       stopCamera();
-      onChange(new File([blob], 'selfie-with-id.jpg', { type: 'image/jpeg' }));
+      const photo = new File([blob], 'selfie-with-id.jpg', { type: 'image/jpeg' });
+      rememberFaceMatch(photo, match);
+      onChange(photo);
       setPhase('done');
     }, 'image/jpeg', 0.9);
   };
@@ -189,8 +207,9 @@ export default function SelfieCapture({ id, file, idType, onChange }: {
         Selfie holding your ID<RequirementTag value="Required" />
       </p>
       <p className="mobile-caption text-ink-muted mb-3">
-        Take a photo of yourself holding your {idName} next to your face, front side toward the camera. Our review team
-        checks that the face matches the ID. Camera only; photos from your gallery can&apos;t be used.
+        Take a photo of yourself holding your {idName} next to your face, front side toward the camera. Your device
+        compares your face with the ID photo (only the result is sent, never your face data), and our review team
+        checks it too. Camera only; photos from your gallery can&apos;t be used.
       </p>
 
       <div className="border border-line-strong bg-surface" aria-labelledby={`${id}-label`}>
@@ -252,6 +271,7 @@ export default function SelfieCapture({ id, file, idType, onChange }: {
       </div>
 
       {message && <p role="alert" className="mt-2 text-xs text-danger">{message}</p>}
+      {hint && phase === 'done' && <p role="status" className="mt-2 text-xs text-amber-800">{hint}</p>}
       {note && phase === 'done' && <p role="status" className="mt-2 text-xs text-ink-muted">{note}</p>}
     </div>
   );

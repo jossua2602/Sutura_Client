@@ -5,7 +5,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { refreshSubscriptionTier } from '@/hooks/useSubscriptionTier';
 import api from '@/lib/axios';
-import { BRANCH_LIMITS, type PaymentDetails, type Plan, type Subscription, type UpgradeRequest } from './billingTypes';
+import type { CheckoutOutcome } from '@/components/shared/GcashCheckoutModal';
+import { BRANCH_LIMITS, type OnlinePaymentResult, type PaymentDetails, type Plan, type Subscription, type UpgradeRequest } from './billingTypes';
 
 export function useBillingData() {
   const { store, user } = useAuthStore();
@@ -16,6 +17,9 @@ export function useBillingData() {
   const [upgradingTo, setUpgradingTo] = useState<number | null>(null);
   const [upgradeRequests, setUpgradeRequests] = useState<UpgradeRequest[]>([]);
   const [now] = useState(() => Date.now());
+  const [onlineResult, setOnlineResult] = useState<OnlinePaymentResult | null>(null);
+  // The GCash checkout open in a modal on this page.
+  const [checkout, setCheckout] = useState<{ paymentId: number; url: string } | null>(null);
 
   const [usageCounts, setUsageCounts] = useState({ branches: 0, staff: 0, services: 0 });
 
@@ -112,6 +116,78 @@ export function useBillingData() {
     }
   };
 
+  // Pay with GCash: the server opens a checkout, shown in a modal on this page. If GCash
+  // ever takes over the whole tab, it sends the owner back to
+  // /dashboard/billing?payment=ID&gcash=success|failed (handled below).
+  const payOnline = async (planId: number, billingCycle: 'monthly' | 'yearly') => {
+    if (!store) return false;
+    try {
+      const res = await api.post(`/stores/${store.id}/subscription/pay-online`, { plan_id: planId, billing_cycle: billingCycle });
+      setOnlineResult(null);
+      setCheckout({ paymentId: res.data.data.payment_id, url: res.data.data.checkout_url });
+      return true;
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+      const data = error.response?.data;
+      toast.error(Object.values(data?.errors ?? {})[0]?.[0] || data?.message || 'Could not open GCash. Please try again.');
+      return false;
+    }
+  };
+
+  // Back from GCash: ask the server (which asks GCash) how it went. Works even when
+  // GCash's own notice can't reach the server (local testing).
+  const checkOnlinePayment = useCallback(async (paymentId: number) => {
+    if (!store) return;
+    setOnlineResult({ state: 'checking' });
+    try {
+      const res = await api.post(`/stores/${store.id}/subscription/upgrade-requests/${paymentId}/check`);
+      const d = res.data.data as { paid: boolean; status: string; plan: string | null; billing_period_end: string | null };
+      if (d.paid) {
+        setOnlineResult({ state: 'paid', plan: d.plan, until: d.billing_period_end, started: d.status === 'approved' });
+        await fetchBillingData();
+        await refreshSubscriptionTier(store.id);
+      } else {
+        setOnlineResult({ state: 'processing', paymentId });
+      }
+    } catch {
+      setOnlineResult({ state: 'processing', paymentId });
+    }
+  }, [store, fetchBillingData]);
+
+  // Polled by the checkout modal: true once GCash has confirmed this payment.
+  const isCheckoutPaid = useCallback(async () => {
+    if (!store || !checkout) return false;
+    const res = await api.post(`/stores/${store.id}/subscription/upgrade-requests/${checkout.paymentId}/check`);
+    return Boolean(res.data.data.paid);
+  }, [store, checkout]);
+
+  // The modal closed: show how it went in the banner (a closed modal may still be paid).
+  const finishCheckout = useCallback((outcome: CheckoutOutcome) => {
+    const paymentId = checkout?.paymentId;
+    setCheckout(null);
+    if (!paymentId) return;
+    if (outcome === 'failed') setOnlineResult({ state: 'failed' });
+    else checkOnlinePayment(paymentId);
+  }, [checkout, checkOnlinePayment]);
+
+  useEffect(() => {
+    if (!store?.id) return;
+    // Loaded inside the checkout modal (GCash's return trip): the page that holds the modal handles it.
+    if (window.self !== window.top) return;
+    const params = new URLSearchParams(window.location.search);
+    const paymentId = Number(params.get('payment'));
+    const outcome = params.get('gcash');
+    if (!paymentId || !outcome) return;
+    const t = setTimeout(() => {
+      // Clean the address bar so a refresh doesn't re-run this. Done here, not above: dev mode
+      // runs this effect twice and cancels the first timer, so the second run must still see it.
+      window.history.replaceState(null, '', window.location.pathname);
+      if (outcome === 'failed') setOnlineResult({ state: 'failed' });
+      else checkOnlinePayment(paymentId);
+    }, 0);
+    return () => clearTimeout(t);
+  }, [store?.id, checkOnlinePayment]);
+
   // A free downgrade waiting for the period to end can be called off (a paid one can't).
   const cancelScheduledChange = async () => {
     if (!store) return;
@@ -164,6 +240,13 @@ export function useBillingData() {
     upgradeRequests,
     pendingRequest,
     submitUpgradeRequest,
+    payOnline,
+    checkoutUrl: checkout?.url ?? null,
+    isCheckoutPaid,
+    finishCheckout,
+    onlineResult,
+    checkOnlinePayment,
+    dismissOnlineResult: () => setOnlineResult(null),
     cancelScheduledChange,
     storeId: store?.id,
   };

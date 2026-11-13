@@ -11,7 +11,7 @@ import { formatDate, useAdminList, useDebounced } from '@/components/admin/useAd
 import PaymentReviewModal from '@/components/admin/payments/PaymentReviewModal';
 import GcashSettingsModal from '@/components/admin/payments/GcashSettingsModal';
 import {
-  peso, presetRange, STATUS_BADGE, STATUS_LABEL, TYPE_CLASS, TYPE_LABEL,
+  methodLabel, peso, presetRange, REFUND_STATUS_LABEL, STATUS_BADGE, STATUS_LABEL, TYPE_CLASS, TYPE_LABEL,
   type DatePreset, type PaymentStats, type PlatformPayment,
 } from '@/components/admin/payments/paymentTypes';
 import adminApi from '@/lib/adminApi';
@@ -52,6 +52,7 @@ function PaymentsPageContent() {
   const [search, setSearch] = useState('');
   const [planId, setPlanId] = useState('');
   const [type, setType] = useState('');
+  const [channel, setChannel] = useState('');
   const [preset, setPreset] = useState<DatePreset>('');
   const [custom, setCustom] = useState({ from: '', to: '' });
   const [sort, setSort] = useState<{ by: 'date' | 'amount'; dir: '' | 'asc' | 'desc' }>({ by: 'date', dir: '' });
@@ -59,7 +60,7 @@ function PaymentsPageContent() {
   const query = useDebounced(search);
   const range = preset === 'custom' ? custom : presetRange(preset);
 
-  const filters = { q: query, status, plan_id: planId, type, from: range.from, to: range.to };
+  const filters = { q: query, status, plan_id: planId, type, channel, from: range.from, to: range.to };
   const { items, meta, raw, loading, error, reload } = useAdminList<PlatformPayment>('/admin/payments', {
     ...filters, sort: sort.by, dir: sort.dir || undefined, page, per_page: PER_PAGE,
   });
@@ -136,8 +137,9 @@ function PaymentsPageContent() {
       <div className="grid grid-cols-2 items-stretch gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6" aria-busy={!s || undefined}>
         <StatCard label="To verify" value={s ? s.to_verify : skeleton} hint="Waiting for your check" />
         {/* Money: whole pesos, a size smaller, so it fits a narrow card (exact amount on hover). */}
-        <StatCard label="Paid this month" value={s ? <Money value={s.paid_this_month} /> : skeleton} valueClassName="text-2xl" hint="Verified payments" />
-        <StatCard label="Total revenue" value={s ? <Money value={s.total_revenue} /> : skeleton} valueClassName="text-2xl" hint="All time, verified only" />
+        <StatCard label="Paid this month" value={s ? <Money value={s.paid_this_month} /> : skeleton} valueClassName="text-2xl" hint="Verified payments, after refunds" />
+        <StatCard label="Total revenue" value={s ? <Money value={s.total_revenue} /> : skeleton} valueClassName="text-2xl"
+          hint={s && s.refunded_total > 0 ? `All time, after ${peso(s.refunded_total)} refunded` : 'All time, verified only'} />
         <StatCard label="Rejected" value={s ? s.rejected_open : skeleton} hint="Needs resubmission" />
         <StatCard label="Active subscriptions" value={s ? s.active_subscriptions : skeleton} hint="Paid or on trial" />
         <StatCard label="Payments" value={s ? s.total : skeleton} hint={s ? `${s.paid} paid, ${s.pending} pending` : undefined} />
@@ -168,6 +170,11 @@ function PaymentsPageContent() {
             <select aria-label="Payment type" value={type} onChange={(e) => { setType(e.target.value); resetPage(); }} className={SELECT_CLASS}>
               <option value="">All types</option>
               {Object.entries(TYPE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+            <select aria-label="Payment method" value={channel} onChange={(e) => { setChannel(e.target.value); resetPage(); }} className={SELECT_CLASS}>
+              <option value="">All methods</option>
+              <option value="online">GCash</option>
+              <option value="receipt">GCash · Receipt</option>
             </select>
             <select aria-label="Date submitted" value={preset} onChange={(e) => { setPreset(e.target.value as DatePreset); resetPage(); }} className={SELECT_CLASS}>
               {DATE_PRESETS.map((d) => <option key={d.value || 'any'} value={d.value}>{d.label}</option>)}
@@ -216,7 +223,8 @@ function PaymentsPageContent() {
                 {/* Type first (owners send a receipt; the ref no. is shown under it when there is one). */}
                 <td className="px-3 py-3 break-words text-sm">
                   <span className={TYPE_CLASS[p.type]}>{TYPE_LABEL[p.type]}</span>
-                  {p.payment_reference && <span className="block font-mono text-xs tabular-nums text-ink-muted">{p.payment_reference}</span>}
+                  <span className="block text-xs text-ink-body">{methodLabel(p)}</span>
+                  {p.payment_reference && <span className="block truncate font-mono text-xs tabular-nums text-ink-muted" title={p.payment_reference}>{p.payment_reference}</span>}
                   <WarningNote count={p.warning_count} />
                 </td>
                 <td className="px-3 py-3 break-words font-semibold text-ink">{p.store?.name}</td>
@@ -225,7 +233,7 @@ function PaymentsPageContent() {
                 <td className="px-3 py-3 text-right font-semibold tabular-nums text-ink">{peso(p.amount_due)}</td>
                 <td className="px-3 py-3 break-words text-ink">{p.sender_name ?? '—'}{p.sender_number && <span className="block text-xs tabular-nums text-ink-muted">{p.sender_number}</span>}</td>
                 <td className="px-3 py-3 tabular-nums text-ink-body">{formatDate(p.created_at)}<span className="block text-xs text-ink-muted">{timeOf(p.created_at)}</span></td>
-                <td className="px-3 py-3"><Badge variant={STATUS_BADGE[p.status]} className="whitespace-nowrap">{STATUS_SHORT[p.status]}</Badge></td>
+                <td className="px-3 py-3"><Badge variant={STATUS_BADGE[p.status]} className="whitespace-nowrap">{STATUS_SHORT[p.status]}</Badge><RefundNote payment={p} /></td>
                 <td className="px-3 py-3 text-right"><RowAction payment={p} onOpen={setReviewing} /></td>
               </tr>
             ))}
@@ -251,10 +259,12 @@ function PaymentsPageContent() {
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
                 {p.payment_reference && (
                   <>
-                    <dt className="text-ink-muted">GCash ref</dt>
+                    <dt className="text-ink-muted">Reference</dt>
                     <dd className="min-w-0 break-words font-mono text-xs tabular-nums text-ink">{p.payment_reference}</dd>
                   </>
                 )}
+                <dt className="text-ink-muted">Method</dt>
+                <dd className="text-ink">{methodLabel(p)}</dd>
                 <dt className="text-ink-muted">Owner</dt>
                 <dd className="min-w-0 break-words text-ink">{p.owner?.name}<span className="block truncate text-xs text-ink-muted">{p.owner?.email}</span></dd>
                 <dt className="text-ink-muted">Sender</dt>
@@ -265,6 +275,7 @@ function PaymentsPageContent() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={STATUS_BADGE[p.status]}>{STATUS_LABEL[p.status]}</Badge>
+                  <RefundNote payment={p} />
                   <WarningNote count={p.warning_count} />
                 </div>
                 <RowAction payment={p} onOpen={setReviewing} />
@@ -296,6 +307,13 @@ function Money({ value }: { readonly value: number }) {
 const STATUS_SHORT ={ pending: 'Pending', approved: 'Paid', rejected: 'Rejected' } as const;
 const needsReview = (p: PlatformPayment) => p.status === 'pending' && p.type !== 'new_shop';
 const timeOf = (iso: string) => new Date(iso).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+
+// "Refunded ₱300.00" under the status, for GCash payments sent back.
+function RefundNote({ payment }: { readonly payment: PlatformPayment }) {
+  if (!payment.refund_status) return null;
+  const tone = payment.refund_status === 'failed' ? 'text-danger' : 'text-ink-body';
+  return <span className={`block text-xs font-medium ${tone}`}>{REFUND_STATUS_LABEL[payment.refund_status]} {peso(payment.refund_amount)}</span>;
+}
 
 function WarningNote({ count }: { readonly count: number }) {
   if (!count) return null;

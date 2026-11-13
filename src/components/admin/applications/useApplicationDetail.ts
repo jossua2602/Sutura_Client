@@ -43,6 +43,9 @@ export interface ApplicationDetail {
     privacy_consent_at?: string | null; terms_accepted_at?: string | null; consent_version?: string | null;
     /** Set once the retention job deleted the selfie. */
     selfie_deleted_at?: string | null;
+    /** On-device comparison of the selfie's face with the ID photo (a hint, not proof). Null = sent before the check. */
+    face_match?: 'likely' | 'unsure' | 'no_match' | 'no_id_face' | 'not_checked' | null;
+    face_match_distance?: number | string | null;
     requested_plan: { name: string } | null; reviewer: { name: string } | null;
     /** "Request Changes" round: waiting on the owner, or back for review. */
     review_state: 'changes_requested' | 'resubmitted' | null;
@@ -53,6 +56,19 @@ export interface ApplicationDetail {
     update_token_expires_at: string | null;
     change_requester: { name: string } | null;
   } | null;
+}
+
+/** The application's plan payment: a receipt upload, or GCash paid online (refundable). */
+export interface PlanPayment {
+  id: number;
+  channel: 'online' | 'receipt';
+  amount: number;
+  paid: boolean | null;
+  paid_at: string | null;
+  reference: string | null;
+  refundable: boolean;
+  refund_status: 'pending' | 'succeeded' | 'failed' | null;
+  refund_amount: number | null;
 }
 
 export interface ChangeItem {
@@ -71,6 +87,7 @@ export function useApplicationDetail(id: string) {
   const [documents, setDocuments] = useState<ApplicationDocument[]>([]);
   // Recommended documents the owner skipped (TIN/BIR, business permits).
   const [missingDocuments, setMissingDocuments] = useState<{ key: string; label: string }[]>([]);
+  const [planPayment, setPlanPayment] = useState<PlanPayment | null>(null);
   const [error, setError] = useState('');
   const [suggestedLogin, setSuggestedLogin] = useState('');
   const [loginDomain, setLoginDomain] = useState('');
@@ -83,6 +100,7 @@ export function useApplicationDetail(id: string) {
       setChangeItems(res.data.data.change_items ?? []);
       setDocuments(res.data.data.documents);
       setMissingDocuments(res.data.data.missing_documents ?? []);
+      setPlanPayment(res.data.data.plan_payment ?? null);
       setSuggestedLogin(res.data.data.suggested_login);
       setLoginDomain(res.data.data.login_domain);
     } catch (err) {
@@ -112,5 +130,5 @@ export function useApplicationDetail(id: string) {
     return { message: res.data.message as string, updateUrl: (res.data.update_url as string | null) ?? null };
   };
 
-  return { store, documents, missingDocuments, error, suggestedLogin, loginDomain, changeItems, approve, reject, requestChanges };
+  return { store, documents, missingDocuments, planPayment, error, suggestedLogin, loginDomain, changeItems, approve, reject, requestChanges };
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
+import { appendFaceMatch } from './faceMatch';
 import {
   EMPTY_OWNER, EMPTY_SHOP,
   type ApplicationStep, type BillingCycle, type DocumentKey, type OwnerFields,
@@ -25,6 +26,8 @@ export function useStoreApplication() {
   const [planId, setPlanId] = useState<number | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash');
+  // Pay with GCash right after submitting (default), or attach a receipt of a payment already sent.
+  const [payOnline, setPayOnline] = useState(true);
   // Privacy consent (Documents step) and the terms agreement (last step).
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -87,12 +90,17 @@ export function useStoreApplication() {
       if (b.area.district_code) form.append(`branches[${i}][district_code]`, b.area.district_code);
       form.append(`branches[${i}][barangay_code]`, b.area.barangay_code);
     });
-    Object.entries(files).forEach(([key, file]) => form.append(key, file));
+    Object.entries(files).forEach(([key, file]) => {
+      if (key === 'payment_receipt' && payOnline) return;
+      form.append(key, file);
+    });
     permits.forEach((file) => form.append('business_permits[]', file));
     form.append('government_id_type', governmentIdType);
+    appendFaceMatch(form, files.selfie_with_id);
     form.append('plan_id', String(planId));
     form.append('billing_cycle', billingCycle);
     form.append('payment_method', paymentMethod);
+    if (payOnline) form.append('pay_online', '1');
     form.append('privacy_consent', '1');
     form.append('terms_accepted', '1');
 
@@ -100,11 +108,17 @@ export function useStoreApplication() {
       const res = await api.post('/store-applications', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      const payment = res.data.data.payment as { token: string; checkout_url: string | null } | null;
+      if (payment) {
+        // Saved: go pay. If GCash couldn't be reached, the payment page lets them try again.
+        window.location.assign(`/register/store/payment/${payment.token}${payment.checkout_url ? '?pay=1' : ''}`);
+        return;
+      }
       setSubmittedTo(res.data.data.contact_email);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      setSubmitting(false);
     } catch (err) {
       setError(getErrorMessage(err, 'Could not submit your application. Please try again.'));
-    } finally {
       setSubmitting(false);
     }
   };
@@ -112,7 +126,7 @@ export function useStoreApplication() {
   return {
     step, goTo, owner, setOwner, shop, setShop, files, setFile, permits, setPermits,
     governmentIdType, setGovernmentIdType, plans, planId, setPlanId, billingCycle, setBillingCycle,
-    paymentMethod, setPaymentMethod, error, setError, submitting, submit, submittedTo,
+    paymentMethod, setPaymentMethod, payOnline, setPayOnline, error, setError, submitting, submit, submittedTo,
     privacyConsent, setPrivacyConsent, termsAccepted, setTermsAccepted,
   };
 }

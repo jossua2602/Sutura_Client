@@ -10,6 +10,8 @@ import PlanComparisonSection from '@/components/billing/PlanComparisonSection';
 import BillingHistorySection from '@/components/billing/BillingHistorySection';
 import UpgradePaymentModal from '@/components/billing/UpgradePaymentModal';
 import UpgradeRequestsSection from '@/components/billing/UpgradeRequestsSection';
+import OnlinePaymentBanner from '@/components/billing/OnlinePaymentBanner';
+import GcashCheckoutModal from '@/components/shared/GcashCheckoutModal';
 import { planNeedsPayment, type Plan } from '@/components/billing/billingTypes';
 
 export default function BillingPage() {
@@ -29,13 +31,20 @@ export default function BillingPage() {
     upgradeRequests,
     pendingRequest,
     submitUpgradeRequest,
+    payOnline,
+    checkoutUrl,
+    isCheckoutPaid,
+    finishCheckout,
+    onlineResult,
+    checkOnlinePayment,
+    dismissOnlineResult,
     cancelScheduledChange,
     storeId,
   } = useBillingData();
   const [payingFor, setPayingFor] = useState<Plan | null>(null);
 
-  // Every paid plan (renewal, upgrade or step down) takes a GCash payment +
-  // receipt; a free plan switches directly (at the end of a paid period).
+  // Every paid plan (renewal, upgrade or step down) takes a GCash payment (online,
+  // or a receipt upload); a free plan switches directly (at the end of a paid period).
   const choosePlan = (planId: number) => {
     const plan = plans.find((p) => p.id === planId);
     if (!plan) return;
@@ -79,6 +88,8 @@ export default function BillingPage() {
         <h1 className="text-3xl font-bold tracking-tight text-ink mb-1">Billing &amp; Plans</h1>
         <p className="text-ink-muted">Manage your subscription, track usage, and scale your shop.</p>
       </div>
+
+      {onlineResult && <OnlinePaymentBanner result={onlineResult} onCheckAgain={checkOnlinePayment} onDismiss={dismissOnlineResult} />}
 
       {(isExpired || isExpiringSoon) && (
         <div
@@ -140,13 +151,15 @@ export default function BillingPage() {
       {pendingRequest && (
         <div className="flex items-start gap-3 p-4 border border-amber-300 bg-amber-50 text-sm text-amber-900">
           <AlertTriangle size={18} className="shrink-0 text-amber-600 mt-0.5" />
-          <p>Your payment for the <strong>{pendingRequest.plan?.name}</strong> plan is waiting for the SUTURA team to check it in GCash. You&apos;ll get a notification once it&apos;s confirmed.</p>
+          <p>Your payment for the <strong>{pendingRequest.plan?.name}</strong> plan is waiting for the SUTURA team to {pendingRequest.channel === 'online' ? 'finish checking it' : 'check it in GCash'}. You&apos;ll get a notification once it&apos;s confirmed.</p>
         </div>
       )}
 
       <UpgradeRequestsSection requests={upgradeRequests} storeId={storeId} />
 
-      <UpgradePaymentModal plan={payingFor} current={currentSubscription} onClose={() => setPayingFor(null)} onSubmit={submitUpgradeRequest} />
+      <UpgradePaymentModal plan={payingFor} current={currentSubscription} onClose={() => setPayingFor(null)} onSubmit={submitUpgradeRequest} onPayOnline={payOnline} />
+
+      <GcashCheckoutModal url={checkoutUrl} isPaid={isCheckoutPaid} onFinish={finishCheckout} />
 
       <PlanComparisonSection
         plans={plans}

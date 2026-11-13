@@ -13,6 +13,7 @@ import { ageStatus } from './OwnerStep';
 import AddressFields, { addressErrors } from './AddressFields';
 import { EMPTY_PSGC_ADDRESS, type PsgcAddress } from '@/lib/psgc';
 import { GOVERNMENT_ID_TYPES, type PaymentMethod } from './applicationTypes';
+import { appendFaceMatch } from './faceMatch';
 
 const LocationPicker = dynamic(() => import('@/components/discovery/LocationPicker'), { ssr: false });
 
@@ -150,6 +151,7 @@ export default function ApplicationUpdateForm({ token }: { readonly token: strin
     if (has('payment')) form.append('payment_method', paymentMethod);
     if (has('government-id')) form.append('government_id_type', govIdType);
     Object.entries(files).forEach(([field, file]) => form.append(field, file));
+    if (has('selfie')) appendFaceMatch(form, files.selfie_with_id);
     permits.forEach((file) => form.append('business_permits[]', file));
 
     setSubmitting(true);

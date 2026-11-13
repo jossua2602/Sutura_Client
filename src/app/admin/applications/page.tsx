@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUp } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import Badge from '@/components/shared/Badge';
 import SearchInput from '@/components/shared/SearchInput';
@@ -34,18 +34,31 @@ export default function AdminApplicationsPage() {
   const [status, setStatus] = useState('pending');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  // '' = the tab's default: pending oldest-applied first (the queue), decided newest first.
+  const [dir, setDir] = useState<'' | 'asc' | 'desc'>('');
   const query = useDebounced(search);
-  const { items, meta, raw, loading, error } = useAdminList<ApplicationRow>('/admin/store-applications', { status, search: query, page });
+  const { items, meta, raw, loading, error } = useAdminList<ApplicationRow>('/admin/store-applications', { status, search: query, page, dir: dir || undefined });
+  const effectiveDir = dir || (status === 'pending' ? 'asc' : 'desc');
+  const sortLabel = status === 'pending' ? 'Applied' : 'Decided';
   const counts = (raw.counts ?? {}) as Record<string, number>;
 
   return (
     <div className="space-y-6">
       <PageHeader title="Shop Applications" description="Verify each shop's documents and payment before it goes live.">
-        <FilterTabs options={STATUSES.map((s) => ({ ...s, count: counts[s.value] ?? 0 }))} value={status} onChange={(v) => { setStatus(v); setPage(1); }} />
+        <FilterTabs options={STATUSES.map((s) => ({ ...s, count: counts[s.value] ?? 0 }))} value={status} onChange={(v) => { setStatus(v); setDir(''); setPage(1); }} />
       </PageHeader>
 
-      <div className="max-w-sm">
-        <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search shop or owner email" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="w-full sm:max-w-sm">
+          <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search shop or owner email" />
+        </div>
+        <button type="button" onClick={() => { setDir(effectiveDir === 'asc' ? 'desc' : 'asc'); setPage(1); }}
+          aria-label={`Sort by ${sortLabel.toLowerCase()} date: ${effectiveDir === 'asc' ? 'oldest first' : 'newest first'}. Click to reverse.`}
+          className="inline-flex min-h-11 items-center gap-2 self-start border border-line-strong bg-surface px-4 text-sm text-ink hover:bg-sunken cursor-pointer sm:self-auto">
+          <span className="text-eyebrow">{sortLabel}</span>
+          {effectiveDir === 'asc' ? <ArrowUp size={14} aria-hidden="true" /> : <ArrowDown size={14} aria-hidden="true" />}
+          {effectiveDir === 'asc' ? 'Oldest first' : 'Newest first'}
+        </button>
       </div>
 
       {/* Bolder outline and row rules so each application reads as its own card. */}

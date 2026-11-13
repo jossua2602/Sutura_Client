@@ -104,12 +104,25 @@ export interface UpgradeRequest {
   billing_cycle: 'monthly' | 'yearly';
   quoted_price: string | number;
   payment_reference: string | null;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   rejection_reason: string | null;
   created_at: string;
   reviewed_at: string | null;
   plan?: { id: number; name: string };
+  /** online = paid with GCash in SUTURA (confirmed automatically); receipt = screenshot upload. */
+  channel?: 'online' | 'receipt';
+  gateway_status?: 'awaiting' | 'paid' | 'expired' | null;
+  refund_amount?: string | number | null;
+  refund_status?: 'pending' | 'succeeded' | 'failed' | null;
+  refunded_at?: string | null;
 }
+
+/** What the Billing page shows after coming back from the GCash checkout. */
+export type OnlinePaymentResult =
+  | { state: 'checking' }
+  | { state: 'paid'; plan: string | null; until: string | null; started: boolean }
+  | { state: 'processing'; paymentId: number }
+  | { state: 'failed' };
 
 /** A plan's price for a cycle (yearly falls back to 10× monthly, matching the plan cards). */
 export const planPrice = (plan: Plan, cycle: 'monthly' | 'yearly'): number =>

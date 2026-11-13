@@ -14,7 +14,7 @@ const STEP_COPY = {
   1: { title: 'About you', body: 'The shop owner’s details, and where we should send your shop login.' },
   2: { title: 'Your shop', body: 'What customers will see, and where to find you.' },
   3: { title: 'Verification documents', body: 'We check these before your shop goes live.' },
-  4: { title: 'Choose a plan', body: 'Pick a plan and upload your payment receipt.' },
+  4: { title: 'Choose a plan', body: 'Pick a plan and how you want to pay with GCash.' },
 } as const;
 
 // "Open a shop" application — ported from the sutura2 System Admin

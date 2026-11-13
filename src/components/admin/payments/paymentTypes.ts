@@ -27,7 +27,29 @@ export interface PlatformPayment {
   owner: { name: string; email: string; phone: string | null } | null;
   plan: { id: number; name: string } | null;
   reviewer: string | null;
+  /** online = paid with GCash in SUTURA (confirmed automatically); receipt = screenshot upload. */
+  channel: 'online' | 'receipt';
+  gateway_paid_at: string | null;
+  refundable: boolean;
+  refund_amount: number | null;
+  refund_status: 'pending' | 'succeeded' | 'failed' | null;
+  refund_reason: string | null;
+  refunded_at: string | null;
 }
+
+/** "GCash" for one paid in SUTURA, "GCash · Receipt" for a screenshot upload. */
+export const methodLabel = (p: Pick<PlatformPayment, 'channel'>): string => (p.channel === 'online' ? 'GCash' : 'GCash · Receipt');
+
+export const REFUND_STATUS_LABEL = { pending: 'Refund processing', succeeded: 'Refunded', failed: 'Refund failed' } as const;
+
+/** Refund reasons (the code is what the payment service records). */
+export const REFUND_REASONS = [
+  { code: 'CANCELLATION', label: 'Application rejected' },
+  { code: 'DUPLICATE', label: 'Paid twice' },
+  { code: 'REQUESTED_BY_CUSTOMER', label: 'Requested by the shop' },
+  { code: 'OTHERS', label: 'Other' },
+] as const;
+export type RefundReasonCode = (typeof REFUND_REASONS)[number]['code'];
 
 export interface PaymentDetail extends PlatformPayment {
   logs: { id: number; action: string; note: string | null; created_at: string; by: string | null }[];
@@ -41,6 +63,7 @@ export interface PaymentStats {
   paid_this_month: number;
   paid_this_month_count: number;
   total_revenue: number;
+  refunded_total: number;
   rejected_open: number;
   active_subscriptions: number;
   total: number;

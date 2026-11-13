@@ -75,6 +75,9 @@ export default function ServiceGridView({ services, loading, canManage }: Readon
       });
   }, [services, search, sortOrder, statusFilter, categoryFilter]);
 
+  // Drafts made from what the shop ticked at registration: hidden, no price yet.
+  const unpricedHidden = services.filter((s) => !s.is_active && s.base_price == null).length;
+
   const activeFiltersCount = (isServicePriceSort(sortOrder) ? 1 : 0) + (statusFilter ? 1 : 0) + (categoryFilter ? 1 : 0);
   const resetAll = () => {
     setSortOrder(DEFAULT_SERVICE_SORT);
@@ -111,6 +114,20 @@ export default function ServiceGridView({ services, loading, canManage }: Readon
       <CatalogFilterSidebar activeFiltersCount={activeFiltersCount} onResetAll={resetAll}>{body}</CatalogFilterSidebar>
 
       <div className="flex-1 min-w-0 space-y-5">
+        {canManage && unpricedHidden > 0 && (
+          <div role="status" className="flex flex-col gap-3 border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              <span className="font-semibold">{unpricedHidden} {unpricedHidden === 1 ? 'service is' : 'services are'} hidden from customers</span>
+              {' '}until you add a price. Open each one, set its price and estimate, then turn it on.
+            </p>
+            {statusFilter !== 'paused' && (
+              <button type="button" onClick={() => setStatusFilter('paused')}
+                className="min-h-11 shrink-0 self-start border border-amber-400 bg-white px-4 text-xs font-semibold text-amber-900 hover:bg-amber-100 cursor-pointer sm:self-auto">
+                Show hidden services
+              </button>
+            )}
+          </div>
+        )}
         <CatalogGridToolbar
           searchQuery={search}
           setSearchQuery={setSearch}

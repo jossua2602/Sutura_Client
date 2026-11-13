@@ -3,20 +3,22 @@
 import { Check } from 'lucide-react';
 import { FileField, StepActions } from './ApplicationFields';
 import PlatformPaymentBox from '@/components/shared/PlatformPaymentBox';
-import { formatPeso, type BillingCycle, type PaymentMethod } from './applicationTypes';
+import { formatPeso, type BillingCycle } from './applicationTypes';
 import type { StoreApplicationState } from './useStoreApplication';
 
 const CYCLES: { value: BillingCycle; label: string }[] = [
   { value: 'monthly', label: 'Monthly' },
   { value: 'yearly', label: 'Yearly' },
 ];
-// Plan payments are GCash only (bank transfer was removed).
-const METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: 'gcash', label: 'GCash' },
+// Plan payments are GCash only: in the GCash app right after submitting (default), or a
+// receipt of a payment already sent to SUTURA's GCash (the backup).
+const METHODS: { online: boolean; label: string; hint: string }[] = [
+  { online: true, label: 'Pay with GCash', hint: 'After you submit, you’ll pay in the GCash app.' },
+  { online: false, label: 'Upload a receipt', hint: 'Already sent it to SUTURA’s GCash? Attach the screenshot.' },
 ];
 
 export default function PlanStep({ app }: { readonly app: StoreApplicationState }) {
-  const { plans, planId, setPlanId, billingCycle, setBillingCycle, paymentMethod, setPaymentMethod, files, setFile, goTo, submit, submitting, termsAccepted, setTermsAccepted } = app;
+  const { plans, planId, setPlanId, billingCycle, setBillingCycle, payOnline, setPayOnline, files, setFile, goTo, submit, submitting, termsAccepted, setTermsAccepted } = app;
   const selected = plans.find((p) => p.id === planId);
   const price = selected ? (billingCycle === 'yearly' ? selected.price_yearly : selected.price_monthly) : 0;
 
@@ -56,18 +58,34 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
       <div className="space-y-4 border-t border-line pt-5">
         <div>
           <p className="text-sm text-ink mb-2">Payment Method<span className="text-danger">*</span></p>
-          <div className="flex gap-3">
-            {METHODS.map((m) => (
-              <button key={m.value} type="button" aria-pressed={paymentMethod === m.value} onClick={() => setPaymentMethod(m.value)}
-                className={`min-h-12 flex-1 border text-sm ${paymentMethod === m.value ? 'border-ink bg-ink text-white' : 'border-line-strong bg-surface text-ink'}`}>
-                {m.label}
-              </button>
-            ))}
+          <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Payment method">
+            {METHODS.map((m) => {
+              const on = payOnline === m.online;
+              return (
+                <button key={m.label} type="button" role="radio" aria-checked={on} onClick={() => setPayOnline(m.online)}
+                  className={`min-h-12 border p-3 text-left ${on ? 'border-ink bg-ink text-white' : 'border-line-strong bg-surface text-ink'}`}>
+                  <span className="block text-sm font-semibold">{m.label}</span>
+                  <span className={`mt-1 block text-xs leading-relaxed ${on ? 'text-white/80' : 'text-ink-muted'}`}>{m.hint}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
-        <PlatformPaymentBox amount={Number(price)} note="Your plan starts once your shop is approved. After you pay, upload a screenshot of the GCash receipt below." />
-        <FileField id="app-doc-payment_receipt" label="Payment Receipt" hint="Screenshot or photo — JPG, PNG, or WEBP" accept="image/*"
-          file={files.payment_receipt} onChange={(file) => setFile('payment_receipt', file)} />
+        {payOnline ? (
+          <div className="border border-line bg-sunken p-4 mobile-body-sm text-ink-body">
+            <p><span className="text-ink-muted">Amount:</span> <strong className="text-ink tabular-nums">{formatPeso(price)}</strong></p>
+            <p className="mt-2">
+              When you submit, we save your application and take you to GCash to pay. Your plan starts once your shop is approved.
+              If it isn&apos;t approved, the payment is refunded to your GCash.
+            </p>
+          </div>
+        ) : (
+          <>
+            <PlatformPaymentBox amount={Number(price)} note="Your plan starts once your shop is approved. After you pay, upload a screenshot of the GCash receipt below." />
+            <FileField id="app-doc-payment_receipt" label="Payment Receipt" hint="Screenshot or photo — JPG, PNG, or WEBP" accept="image/*"
+              file={files.payment_receipt} onChange={(file) => setFile('payment_receipt', file)} />
+          </>
+        )}
       </div>
 
       {/* Declaration + terms, right before Submit: it covers everything entered in every step. */}
@@ -91,7 +109,7 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
         </span>
       </label>
 
-      <StepActions onBack={() => goTo(3)} nextLabel={submitting ? 'Submitting…' : 'Submit Application'} busy={submitting || !selected || !termsAccepted} />
+      <StepActions onBack={() => goTo(3)} nextLabel={submitting ? 'Submitting…' : payOnline ? 'Submit and Pay with GCash' : 'Submit Application'} busy={submitting || !selected || !termsAccepted} />
     </form>
   );
 }

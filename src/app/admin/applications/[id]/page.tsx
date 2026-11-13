@@ -15,12 +15,15 @@ import { useApplicationDetail, type ApplicationDocument, type IssuedCredentials 
 import ReasonModal from '@/components/admin/ui/ReasonModal';
 import { ListState } from '@/components/admin/ui/AdminPrimitives';
 import { formatDate } from '@/components/admin/useAdminList';
+import { formatPeso } from '@/components/store-application/applicationTypes';
 
 const STATUS_BADGE: Record<string, BadgeVariant> = { pending: 'warning', approved: 'success', rejected: 'danger', suspended: 'danger' };
 
 export default function ApplicationDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
-  const { store, documents, missingDocuments, error, suggestedLogin, loginDomain, changeItems, approve, reject, requestChanges } = useApplicationDetail(id);
+  const { store, documents, missingDocuments, planPayment, error, suggestedLogin, loginDomain, changeItems, approve, reject, requestChanges } = useApplicationDetail(id);
+  // Paid with GCash online: can't approve until the money is in; denying refunds it.
+  const awaitingGcash = planPayment?.channel === 'online' && !planPayment.paid;
   const toast = useToast();
   const [rejectOpen, setRejectOpen] = useState(false);
   const [approveOpen, setApproveOpen] = useState(false);
@@ -160,7 +163,7 @@ export default function ApplicationDetailPage({ params }: Readonly<{ params: Pro
         </p>
       )}
 
-      <ApplicationSummary store={store} />
+      <ApplicationSummary store={store} planPayment={planPayment} />
 
       <section>
         <h2 className="tablet-h3 text-ink mb-3">Documents</h2>
@@ -190,7 +193,9 @@ export default function ApplicationDetailPage({ params }: Readonly<{ params: Pro
                 <PencilLine size={16} /> {app.review_state === 'changes_requested' ? 'Request Changes Again' : 'Request Changes'}
               </button>
             )}
-            <button type="button" onClick={() => setApproveOpen(true)} className="inline-flex min-h-12 items-center gap-2 bg-ink px-5 text-sm font-semibold text-white">
+            <button type="button" onClick={() => setApproveOpen(true)} disabled={awaitingGcash}
+              title={awaitingGcash ? 'Waiting for the shop to finish paying with GCash' : undefined}
+              className="inline-flex min-h-12 items-center gap-2 bg-ink px-5 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed">
               <Check size={16} /> Approve
             </button>
           </div>
@@ -219,7 +224,7 @@ export default function ApplicationDetailPage({ params }: Readonly<{ params: Pro
       <ReasonModal
         isOpen={rejectOpen}
         title={`Deny ${store.name}?`}
-        description="The owner sees this reason on their dashboard and in the email we send, so say exactly what to fix."
+        description={`The owner sees this reason on their dashboard and in the email we send, so say exactly what to fix.${planPayment?.refundable ? ` Their ${formatPeso(planPayment.amount)} GCash payment is refunded automatically.` : ''}`}
         placeholder="e.g. The DTI certificate is blurry — please upload a clearer copy."
         confirmLabel="Deny Application"
         onClose={() => setRejectOpen(false)}

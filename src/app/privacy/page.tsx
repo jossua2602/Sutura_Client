@@ -65,9 +65,11 @@ const SECTIONS: LegalSection[] = [
           <li>Your plan payment receipt.</li>
         </ul>
         <p>
-          We use these only to check that the shop and its owner are real before the shop goes live. A face check runs
-          on your own device to make sure your face is visible in the selfie; the photo itself is compared with your ID
-          by a person on the SUTURA review team. We don&apos;t use automated face matching.
+          We use these only to check that the shop and its owner are real before the shop goes live. When you take the
+          selfie, a check runs on your own device: it makes sure your face is visible and compares it with the photo on
+          the ID you are holding. Your face data never leaves your device; only the result (for example &quot;likely the
+          same person&quot;) is sent to SUTURA. That result is only a hint: a person on the SUTURA review team compares the
+          selfie with your ID and makes the decision. The automatic check never approves or rejects an application.
         </p>
         <p>
           Only the SUTURA review team can see these files. They are stored privately, never shown on your shop profile,
