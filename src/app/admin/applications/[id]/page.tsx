@@ -4,6 +4,7 @@ import { use, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Check, Clock, PencilLine, X } from 'lucide-react';
 import Badge, { type BadgeVariant } from '@/components/shared/Badge';
+import FreeTrialTag from '@/components/admin/applications/FreeTrialTag';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/lib/apiError';
 import ApplicationSummary from '@/components/admin/applications/ApplicationSummary';
@@ -91,11 +92,14 @@ export default function ApplicationDetailPage({ params }: Readonly<{ params: Pro
           <p className="text-eyebrow-accent">Shop application</p>
           <h1 className="text-display mt-2 text-3xl font-semibold text-ink">{store.name}</h1>
         </div>
-        <Badge variant={STATUS_BADGE[store.status] ?? 'neutral'} className="capitalize">
-          {store.status === 'pending' && app?.review_state === 'changes_requested' ? 'Waiting on owner'
-            : store.status === 'pending' && app?.review_state === 'resubmitted' ? 'Updated — review again'
-            : store.status}
-        </Badge>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {app?.free_trial && <FreeTrialTag large />}
+          <Badge variant={STATUS_BADGE[store.status] ?? 'neutral'} className="capitalize">
+            {store.status === 'pending' && app?.review_state === 'changes_requested' ? 'Waiting on owner'
+              : store.status === 'pending' && app?.review_state === 'resubmitted' ? 'Updated — review again'
+              : store.status}
+          </Badge>
+        </div>
       </header>
 
       {store.status === 'pending' && app?.review_state === 'changes_requested' && (

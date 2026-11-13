@@ -54,10 +54,8 @@ const GARMENTS: [RegExp, string, string][] = [
 const SERVICES: [RegExp, string, string][] = [
   [/\b(alter(ed|ing|ations?)?|repair(ed|ing|s)?|fix(ed|ing)?|hem(med|ming|s)?|resiz(e|ed|ing)|tapered?|zippers?|tahi|patahi)\b/, 'alterations_repairs', 'Alterations & Repairs'],
   [/\b(custom|made[- ]to[- ]measure|bespoke|tailor[- ]made)\b/, 'custom_tailoring', 'Custom Tailoring'],
-  [/\bschool\b/, 'school', 'School'],
-  [/\b(office|corporate)\b/, 'office', 'Office'],
-  [/\b(medical|nurse|nursing|scrubs?|hospital)\b/, 'medical', 'Medical'],
-  [/\b(maritime|seaman|seafarer|marine)\b/, 'maritime', 'Maritime'],
+  // Office / School / Medical / Maritime are kinds of Uniform now (2026-11-14).
+  [/\b(school|office|corporate|medical|nurse|nursing|scrubs?|hospital|maritime|seaman|seafarer|marine|pnp|police|bfp|afp|military|security guard)\b/, 'uniform', 'Uniform'],
   [/\b(sports?|team|basketball|volleyball|esports?)\b/, 'sports', 'Sports'],
   [/\b(embroider(y|ed)?|logo)\b/, 'embroidery', 'Embroidery'],
   [/\bformal\b/, 'formal', 'Formal'],

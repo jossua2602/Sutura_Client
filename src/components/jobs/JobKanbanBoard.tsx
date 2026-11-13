@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause, Star, Store, Eye, Sparkles, Shirt, Zap, type LucideIcon } from 'lucide-react';
+import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause, Star, Store, Eye, Sparkles, Shirt, Zap, Clock, type LucideIcon } from 'lucide-react';
 import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, requiresDownpayment, ON_HOLD_COLUMN, PRODUCTION_COLUMNS, normalizeJobStatus, GARMENT_CATEGORY_LABELS } from './jobHelpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import CancellationReasonModal from './CancellationReasonModal';
@@ -94,10 +94,9 @@ export default function JobKanbanBoard({
   onAssignStaff,
 }: JobKanbanBoardProps) {
   const repairRequiresDownpayment = Boolean(useAuthStore((s) => s.store?.repair_requires_downpayment));
-  // POST .../jobs/{id}/reject is role:store_owner,branch_manager-only in
-  // routes/api.php (grouped with pay/discount/destroy as a supervisory
-  // action) — Approve is a plain PUT status update staff can already make,
-  // but Reject was shown to every role and 403'd for plain staff.
+  // POST .../jobs/{id}/approve and /reject are role:store_owner,branch_manager-only
+  // in routes/api.php (approving commits the shop to the price, due date and deposit).
+  // Plain staff see a "waiting for approval" note instead of buttons that would 403.
   const user = useAuthStore((s) => s.user);
   const isOwnerOrManager = Boolean(
     user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name))
@@ -776,7 +775,13 @@ export default function JobKanbanBoard({
                   )}
 
                   {/* Feasibility Review Gate (Pending only) */}
-                  {normalizeJobStatus(job.status) === 'pending' && (
+                  {normalizeJobStatus(job.status) === 'pending' && !isOwnerOrManager && (
+                    <p className="mt-4 pt-3 border-t border-amber-100 flex items-center gap-1.5 text-xs text-amber-800">
+                      <Clock size={13} className="shrink-0" aria-hidden="true" />
+                      Waiting for the owner or branch manager to approve.
+                    </p>
+                  )}
+                  {normalizeJobStatus(job.status) === 'pending' && isOwnerOrManager && (
                     <div className="mt-4 pt-3 border-t border-amber-100 flex items-center gap-2">
                       {actionLoadingId === job.id ? (
                         <div className="flex-1 flex justify-center"><Loader2 size={14} className="animate-spin text-amber-500" /></div>
@@ -791,15 +796,13 @@ export default function JobKanbanBoard({
                           >
                             <Check size={14} className="shrink-0" /> <span className="truncate">{viewMode === 'columns' ? 'Approve' : 'Approve to Production'}</span>
                           </button>
-                          {isOwnerOrManager && (
-                            <button
-                              type="button"
-                              onClick={e => { e.preventDefault(); e.stopPropagation(); onReject(job.id); }}
-                              className="shrink-0 min-h-10 flex items-center justify-center gap-1 whitespace-nowrap text-xs font-semibold py-2 px-3 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
-                            >
-                              <X size={14} className="shrink-0" /> <span>Reject</span>
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={e => { e.preventDefault(); e.stopPropagation(); onReject(job.id); }}
+                            className="shrink-0 min-h-10 flex items-center justify-center gap-1 whitespace-nowrap text-xs font-semibold py-2 px-3 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
+                          >
+                            <X size={14} className="shrink-0" /> <span>Reject</span>
+                          </button>
                         </>
                       )}
                     </div>

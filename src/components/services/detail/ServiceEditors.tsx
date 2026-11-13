@@ -7,13 +7,12 @@ import { getErrorMessage } from '@/lib/apiError';
 import { getMediaUrl } from '@/lib/media';
 import { useToast } from '@/context/ToastContext';
 import {
-  SERVICE_CATEGORIES,
-  SERVICE_CATEGORY_LABELS,
   SERVICE_TYPE_LABELS,
   serviceTypesFor,
   type ServiceCategory,
 } from '@/lib/canonicalTaxonomy';
-import { SHOWCASE_CATEGORIES } from '@/lib/serviceShowcase';
+import { searchCategoryFor, useShopCategories } from '../useShopCategories';
+import { guessUniformType } from '@/lib/uniformTypes';
 import { FIELD, LABEL } from '@/components/catalog/editable/editors/fieldStyles';
 import ImageUploadField from './ImageUploadField';
 import { CATEGORY_HANDLING } from '../serviceHelpers';
@@ -106,6 +105,20 @@ export function ServiceSpecEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
   const leafTypes = d.service_category ? serviceTypesFor(d.service_category as ServiceCategory) : [];
   const freeLeaf = d.service_category === 'others';
   const handling = CATEGORY_HANDLING[d.service_category];
+  // One Category (the services on the shop's profile); the search category follows it.
+  const { options: categories, loading: categoriesLoading } = useShopCategories(edit.storeId, d.showcase_category);
+  const pickCategory = (value: string) => {
+    const search = searchCategoryFor(value);
+    patch({
+      showcase_category: value,
+      service_category: search,
+      ...(search !== d.service_category ? {
+        // Uniform: suggest the kind from the name ("PNP Uniform" → PNP / Police).
+        service_leaf_type: search === 'uniform_production' ? guessUniformType(d.name) : '',
+        service_types: CATEGORY_HANDLING[search]?.types ?? [],
+      } : {}),
+    });
+  };
 
   const setTier = (i: number, p: Partial<{ label: string; amount: string }>) =>
     patch({ tiers: d.tiers.map((t, idx) => (idx === i ? { ...t, ...p } : t)) });
@@ -115,13 +128,20 @@ export function ServiceSpecEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="svc-cat" className={LABEL}>Category <span className="text-red-600">*</span></label>
-          <select id="svc-cat" value={d.service_category} onChange={e => patch({ service_category: e.target.value, service_leaf_type: '', service_types: CATEGORY_HANDLING[e.target.value]?.types ?? [] })} className={FIELD}>
-            <option value="">Select a category…</option>
-            {SERVICE_CATEGORIES.map(c => <option key={c} value={c}>{SERVICE_CATEGORY_LABELS[c]}</option>)}
+          <select id="svc-cat" value={d.showcase_category} onChange={e => pickCategory(e.target.value)} className={FIELD}>
+            <option value="">{categoriesLoading ? 'Loading your services…' : 'Select a category…'}</option>
+            {categories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
+          <p className="mt-1 text-xs text-ink-muted">
+            {!categoriesLoading && categories.length === 0
+              ? 'Your shop has no services listed yet. Add them on your shop page (About → Services) first.'
+              : 'From the services on your shop profile. Customers browse your shop page by these.'}
+          </p>
         </div>
         <div>
-          <label htmlFor="svc-leaf" className={LABEL}>Service type</label>
+          <label htmlFor="svc-leaf" className={LABEL}>
+            {d.service_category === 'uniform_production' ? <>Uniform type <span className="text-red-600">*</span></> : 'Service type'}
+          </label>
           {freeLeaf ? (
             <input id="svc-leaf" value={d.service_leaf_type} onChange={e => patch({ service_leaf_type: e.target.value })} placeholder="Describe it" className={FIELD} />
           ) : (
@@ -136,15 +156,6 @@ export function ServiceSpecEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
       {handling && (
         <p className="text-xs text-ink-muted border-l-2 border-line-strong pl-3">{handling.note}</p>
       )}
-
-      <div>
-        <label htmlFor="svc-showcase" className={LABEL}>Shown under on your shop page <span className="text-red-600">*</span></label>
-        <select id="svc-showcase" value={d.showcase_category} onChange={e => patch({ showcase_category: e.target.value })} className={FIELD}>
-          <option value="">Select a group…</option>
-          {SHOWCASE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-        </select>
-        <p className="mt-1 text-xs text-ink-muted">Customers browse your services by these groups, then open a service to see its designs.</p>
-      </div>
 
       <div>
         <p className={LABEL}>Pricing options <span className="text-red-600">*</span></p>

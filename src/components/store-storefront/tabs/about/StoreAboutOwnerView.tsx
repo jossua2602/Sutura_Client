@@ -129,6 +129,8 @@ export default function StoreAboutOwnerView({ store, isStoreCurrentlyOpen, onOpe
       <SpecializationsCard
         specializations={formData.specializations}
         onChange={(specializations) => setFormDataWithDirty((prev) => ({ ...prev, specializations }))}
+        customServices={formData.custom_services}
+        onCustomChange={(custom_services) => setFormDataWithDirty((prev) => ({ ...prev, custom_services }))}
         {...sectionProps('specializations')}
       />
     </div>

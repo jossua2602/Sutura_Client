@@ -17,7 +17,7 @@ interface StoreAboutPublicViewProps {
 export default function StoreAboutPublicView({ store, isStoreCurrentlyOpen }: StoreAboutPublicViewProps) {
   return (
     <div className="space-y-3.5">
-      <SpecializationBadges specializations={store.specializations} />
+      <SpecializationBadges specializations={store.specializations} customServices={store.custom_services} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-stretch">
         <div className="space-y-3.5">
           <OpeningHoursCard

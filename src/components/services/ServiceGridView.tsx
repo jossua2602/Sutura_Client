@@ -10,6 +10,7 @@ import type { SearchServiceResult } from '@/components/search/types';
 import { CardGridSkeleton } from '@/components/ui/Skeleton';
 import type { Service } from './serviceHelpers';
 import ServiceFilterBody, { type ServiceStatusFilter } from './ServiceFilterBody';
+import { showcaseCategory } from '@/lib/serviceShowcase';
 import { DEFAULT_SERVICE_SORT, SERVICE_RANK_CHIPS, isServicePriceSort, type ServiceSortOption } from './serviceSort';
 
 // The owner's own list, shown with the very same card customers see in
@@ -49,10 +50,11 @@ export default function ServiceGridView({ services, loading, canManage }: Readon
   const [categoryFilter, setCategoryFilter] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  // Grouped by the service's one Category (a standard one or the shop's own service).
   const categoryOptions = useMemo(() => {
     const counts = new Map<string, number>();
-    services.forEach((s) => s.service_category && counts.set(s.service_category, (counts.get(s.service_category) ?? 0) + 1));
-    return Array.from(counts, ([value, count]) => ({ value, count }));
+    services.forEach((s) => s.showcase_category && counts.set(s.showcase_category, (counts.get(s.showcase_category) ?? 0) + 1));
+    return Array.from(counts, ([value, count]) => ({ value, label: showcaseCategory(value)?.label ?? value, count }));
   }, [services]);
 
   const filtered = useMemo(() => {
@@ -61,7 +63,7 @@ export default function ServiceGridView({ services, loading, canManage }: Readon
       .filter((s) => {
         if (statusFilter === 'active' && !s.is_active) return false;
         if (statusFilter === 'paused' && s.is_active) return false;
-        if (categoryFilter && s.service_category !== categoryFilter) return false;
+        if (categoryFilter && s.showcase_category !== categoryFilter) return false;
         return !q || s.name.toLowerCase().includes(q) || (s.categories ?? []).some((c) => c.toLowerCase().includes(q));
       })
       .sort((a, b) => {
@@ -74,9 +76,6 @@ export default function ServiceGridView({ services, loading, canManage }: Readon
         }
       });
   }, [services, search, sortOrder, statusFilter, categoryFilter]);
-
-  // Drafts made from what the shop ticked at registration: hidden, no price yet.
-  const unpricedHidden = services.filter((s) => !s.is_active && s.base_price == null).length;
 
   const activeFiltersCount = (isServicePriceSort(sortOrder) ? 1 : 0) + (statusFilter ? 1 : 0) + (categoryFilter ? 1 : 0);
   const resetAll = () => {
@@ -114,20 +113,6 @@ export default function ServiceGridView({ services, loading, canManage }: Readon
       <CatalogFilterSidebar activeFiltersCount={activeFiltersCount} onResetAll={resetAll}>{body}</CatalogFilterSidebar>
 
       <div className="flex-1 min-w-0 space-y-5">
-        {canManage && unpricedHidden > 0 && (
-          <div role="status" className="flex flex-col gap-3 border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
-            <p>
-              <span className="font-semibold">{unpricedHidden} {unpricedHidden === 1 ? 'service is' : 'services are'} hidden from customers</span>
-              {' '}until you add a price. Open each one, set its price and estimate, then turn it on.
-            </p>
-            {statusFilter !== 'paused' && (
-              <button type="button" onClick={() => setStatusFilter('paused')}
-                className="min-h-11 shrink-0 self-start border border-amber-400 bg-white px-4 text-xs font-semibold text-amber-900 hover:bg-amber-100 cursor-pointer sm:self-auto">
-                Show hidden services
-              </button>
-            )}
-          </div>
-        )}
         <CatalogGridToolbar
           searchQuery={search}
           setSearchQuery={setSearch}

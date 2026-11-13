@@ -23,7 +23,7 @@ const LocationPicker = dynamic(() => import('@/components/discovery/LocationPick
 export default function ShopStep({ app }: { readonly app: StoreApplicationState }) {
   const { shop, setShop, goTo, setError } = app;
   const [pickerOpen, setPickerOpen] = useState(false);
-  // "Add Other Service": a short typed-in service that isn't in the list.
+  // "Add Service": a short typed-in service that isn't in the list.
   const [adding, setAdding] = useState(false);
   const [otherDraft, setOtherDraft] = useState('');
   const MAX_OTHER = 5;
@@ -45,7 +45,7 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
     const taken = [...shop.custom_services, ...SERVICE_OPTIONS.map((o) => o.label)]
       .some((s) => s.toLowerCase() === name.toLowerCase());
     if (taken) return setError(`"${name}" is already on your list.`);
-    if (shop.custom_services.length >= MAX_OTHER) return setError(`You can add up to ${MAX_OTHER} other services.`);
+    if (shop.custom_services.length >= MAX_OTHER) return setError(`You can add up to ${MAX_OTHER} services of your own.`);
     setError('');
     setShop({ ...shop, custom_services: [...shop.custom_services, name] });
     setOtherDraft('');
@@ -143,7 +143,7 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
               onClick={() => { setAdding(true); setError(''); }}
               className="inline-flex min-h-11 items-center gap-1.5 border border-dashed border-ink/60 bg-surface px-3.5 text-sm text-ink transition-colors hover:border-ink cursor-pointer"
             >
-              <Plus size={14} aria-hidden="true" /> Add Other Service
+              <Plus size={14} aria-hidden="true" /> Add Service
             </button>
           )}
         </div>

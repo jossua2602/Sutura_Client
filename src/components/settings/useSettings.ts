@@ -3,6 +3,7 @@ import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import { refreshShopCategories } from '@/components/services/useShopCategories';
 
 export interface StoreSettingsData {
   name: string;
@@ -46,6 +47,8 @@ export interface StoreSettingsData {
   default_payment_policy: 'none' | 'full' | 'deposit' | 'custom';
   default_payment_percent: number;
   specializations: string[];
+  /** The shop's own services ("+ Add Service"), listed with the standard ones. */
+  custom_services: string[];
   is_featured: boolean;
   is_hidden: boolean;
   // Where customers should send a GCash/bank payment — informational only,
@@ -111,6 +114,7 @@ export function useSettings() {
     default_payment_policy: 'deposit' as 'none' | 'full' | 'deposit' | 'custom',
     default_payment_percent: 50,
     specializations: [] as string[],
+    custom_services: [] as string[],
     is_featured: false,
     is_hidden: false,
     gcash_number: '',
@@ -176,6 +180,7 @@ export function useSettings() {
             default_payment_policy: s.default_payment_policy ?? 'deposit',
             default_payment_percent: s.default_payment_percent ?? 50,
             specializations: Array.isArray(s.specializations) ? s.specializations : [],
+            custom_services: Array.isArray(s.custom_services) ? s.custom_services : [],
             is_featured: !!s.is_featured,
             is_hidden: !!s.is_hidden,
             gcash_number: s.gcash_number || '',
@@ -329,6 +334,8 @@ export function useSettings() {
       const res = await api.put(`/stores/${store.id}`, formData);
       savedDataRef.current = formData;
       setIsDirty(false);
+      // The service Category list comes from the shop's Services.
+      refreshShopCategories(store.id);
       toast.success('Shop settings saved successfully.');
       if (user && token) {
         setAuth(user, token, res.data.data, staffProfile || undefined);

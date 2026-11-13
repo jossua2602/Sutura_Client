@@ -1,34 +1,32 @@
-import {
-  DEPARTMENTS,
-  DEPARTMENT_LABELS,
-} from '@/lib/canonicalTaxonomy';
-
-// What a store can say it specializes in: the Men/Women/Kids departments
-// plus the "services offered" a shop lists — modelled on Davao shops' own
-// signboards. Mirrors CanonicalTaxonomy::storeSpecializations() /
-// STORE_SERVICE_TAGS on the backend. A store tag only — separate from the
-// Services categories that classify individual services and packages.
+// The services a shop offers: the 10 standard ones, modelled on Davao shops' own
+// signboards (Men / Women / Kids were dropped as shop tags on 2026-11-14). A shop's
+// own extra services are stores.custom_services. Mirrors
+// CanonicalTaxonomy::STORE_SERVICE_TAGS on the backend.
 const STORE_SERVICE_TAGS: { value: string; label: string }[] = [
   { value: 'custom_tailoring', label: 'Custom Tailoring' },
   { value: 'alterations_repairs', label: 'Alterations & Repairs' },
   { value: 'formal', label: 'Formal' },
   { value: 'casual', label: 'Casual' },
-  { value: 'office', label: 'Office' },
-  { value: 'school', label: 'School' },
-  { value: 'maritime', label: 'Maritime' },
-  { value: 'medical', label: 'Medical' },
+  // Office / School / Medical / Maritime were merged into Uniform (2026-11-14); the kind
+  // of uniform is each service's type (see lib/uniformTypes.ts).
+  { value: 'uniform', label: 'Uniform' },
   { value: 'sports', label: 'Sports' },
   { value: 'embroidery', label: 'Embroidery' },
 ];
 
-export const STORE_SPECIALIZATIONS: { value: string; label: string; group: 'Apparel' | 'Services' }[] = [
-  ...DEPARTMENTS.map((d) => ({ value: d, label: DEPARTMENT_LABELS[d], group: 'Apparel' as const })),
-  ...STORE_SERVICE_TAGS.map((s) => ({ ...s, group: 'Services' as const })),
-];
+export const STORE_SPECIALIZATIONS: { value: string; label: string; group: 'Services' }[] =
+  STORE_SERVICE_TAGS.map((s) => ({ ...s, group: 'Services' as const }));
 
 // No longer offered, but still saved on shops that picked them before —
 // labelled so they don't show as raw slugs. Server: LEGACY_STORE_SERVICE_TAGS.
 const LEGACY_LABELS: Record<string, string> = {
+  men: "Men's Apparel",
+  women: "Women's Apparel",
+  children: "Children's Apparel",
+  office: 'Office',
+  school: 'School',
+  maritime: 'Maritime',
+  medical: 'Medical',
   uniform_production: 'Uniform Production',
   printing_sublimation: 'Printing & Sublimation',
   custom_costume_creation: 'Custom Costume Creation',

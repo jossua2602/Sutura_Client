@@ -26,7 +26,7 @@ export interface ApplicationDetail {
   latitude: string | null;
   longitude: string | null;
   specializations: string[] | null;
-  /** Services the shop typed in at registration ("Add Other Service"). */
+  /** Services the shop typed in at registration ("Add Service"). */
   custom_services?: string[] | null;
   declared_branches?: { name: string; address: string }[] | null;
   rejection_reason: string | null;
@@ -39,6 +39,8 @@ export interface ApplicationDetail {
     first_name: string; middle_name: string | null; last_name: string; suffix: string | null;
     birthday: string; contact_number: string; billing_cycle: string; quoted_price: string;
     payment_method: string | null; government_id_type: string; reviewed_at: string | null;
+    /** Asked for a 14-day free trial instead of paying (no plan payment exists). */
+    free_trial?: boolean;
     /** Privacy consent + terms agreement (null on applications sent before they existed). */
     privacy_consent_at?: string | null; terms_accepted_at?: string | null; consent_version?: string | null;
     /** Set once the retention job deleted the selfie. */

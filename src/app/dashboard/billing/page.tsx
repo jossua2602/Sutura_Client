@@ -11,6 +11,7 @@ import BillingHistorySection from '@/components/billing/BillingHistorySection';
 import UpgradePaymentModal from '@/components/billing/UpgradePaymentModal';
 import UpgradeRequestsSection from '@/components/billing/UpgradeRequestsSection';
 import OnlinePaymentBanner from '@/components/billing/OnlinePaymentBanner';
+import { TrialBanner } from '@/components/billing/TrialNotice';
 import GcashCheckoutModal from '@/components/shared/GcashCheckoutModal';
 import { planNeedsPayment, type Plan } from '@/components/billing/billingTypes';
 
@@ -91,7 +92,10 @@ export default function BillingPage() {
 
       {onlineResult && <OnlinePaymentBanner result={onlineResult} onCheckAgain={checkOnlinePayment} onDismiss={dismissOnlineResult} />}
 
-      {(isExpired || isExpiringSoon) && (
+      {/* Free trial: days left, or paused once it ran out unpaid. Replaces the plan banner below. */}
+      <TrialBanner sub={currentSubscription} showLink={false} />
+
+      {(isExpired || isExpiringSoon) && !currentSubscription?.trial_ends_at && (
         <div
           className={`flex items-center gap-3 p-4 rounded-2xl border ${
             isExpired ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'

@@ -145,6 +145,8 @@ export interface StoreProfile {
   my_review?: { id?: number; rating: number; comment?: string | null } | null;
   district?: string;
   specializations?: string[];
+  /** The shop's own services, listed with the standard ones. */
+  custom_services?: string[] | null;
   /** Other locations listed at registration — display only, not bookable branches. */
   declared_branches?: { name: string; address: string }[] | null;
   business_type?: string | null;

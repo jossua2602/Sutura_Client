@@ -34,7 +34,7 @@ export default function StoreApplicationPage() {
           <p className="mobile-overline text-taupe">Open a Shop</p>
           <h1 className="mobile-h1 text-ink mt-2">Register your tailoring shop</h1>
 
-          {app.submittedTo ? <ApplicationSubmitted email={app.submittedTo} /> : (
+          {app.submittedTo ? <ApplicationSubmitted email={app.submittedTo} freeTrial={app.freeTrial} /> : (
           <>
           <div className="mt-6">
             <ApplicationStepper current={app.step} />

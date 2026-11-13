@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowDown, ArrowRight, ArrowUp } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import Badge from '@/components/shared/Badge';
+import FreeTrialTag from '@/components/admin/applications/FreeTrialTag';
 import SearchInput from '@/components/shared/SearchInput';
 import { FilterTabs, ListState, Pager } from '@/components/admin/ui/AdminPrimitives';
 import { formatDate, useAdminList, useDebounced } from '@/components/admin/useAdminList';
@@ -21,6 +22,8 @@ interface ApplicationRow {
     billing_cycle: string;
     requested_plan: { name: string } | null;
     review_state: 'changes_requested' | 'resubmitted' | null;
+    /** Asked for a 14-day free trial instead of paying. */
+    free_trial?: boolean;
   } | null;
 }
 
@@ -72,6 +75,7 @@ export default function AdminApplicationsPage() {
                   <div className="min-w-0">
                     <p className="flex min-w-0 items-center gap-2">
                       <span className="truncate font-semibold text-ink">{row.name}</span>
+                      {row.application?.free_trial && <FreeTrialTag />}
                       {status === 'pending' && row.application?.review_state === 'changes_requested' && <Badge variant="neutral" className="shrink-0">Waiting on owner</Badge>}
                       {status === 'pending' && row.application?.review_state === 'resubmitted' && <Badge variant="warning" className="shrink-0">Updated</Badge>}
                     </p>

@@ -21,6 +21,7 @@ import HelpPanel from '@/components/shell/HelpPanel';
 import HeaderBreadcrumbs from '@/components/shell/HeaderBreadcrumbs';
 import StoreApplicationGate from '@/components/dashboard/StoreApplicationGate';
 import ChangePasswordGate from '@/components/dashboard/ChangePasswordGate';
+import { TrialBanner, useLatestSubscription } from '@/components/billing/TrialNotice';
 
 const SIDEBAR_KEY = 'sutura.sidebar';
 
@@ -96,6 +97,8 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
 
   const roleNames = user?.roles?.map(r => r.name) || [];
   const isStoreOwner = roleNames.includes('store_owner');
+  // Free trial: days left, or "paused" once it ran out unpaid (owners only; Billing shows its own).
+  const latestSubscription = useLatestSubscription(store?.id, isStoreOwner);
   const isBranchManager = roleNames.includes('branch_manager') || Boolean(staffProfile?.is_branch_manager);
   const isStaff = roleNames.includes('staff') || Boolean(staffProfile);
   const canViewAnalytics = isStoreOwner || isBranchManager;
@@ -153,7 +156,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
         ...((isStoreOwner || isBranchManager) ? [{ name: 'Completed Orders', path: '/dashboard/completed-orders', icon: PackageCheck }] : []),
         { name: 'Customers', path: '/dashboard/customers', icon: Users },
         // Texts wait for the shop to check the number and wording before they are sent.
-        ...((isStoreOwner || isBranchManager) ? [{ name: 'Text Messages', path: '/dashboard/sms', icon: MessageSquare }] : []),
+        ...((isStoreOwner || isBranchManager) ? [{ name: 'Text Message Log', path: '/dashboard/sms', icon: MessageSquare }] : []),
       ],
     },
     {
@@ -356,6 +359,9 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
               list, count and form starts empty and reloads for the new branch
               instead of briefly showing the previous branch's data. */}
           <div key={selectedBranchId ?? 'all'} className="p-4 print:p-0">
+            {isStoreOwner && !pathname?.startsWith('/dashboard/billing') && (
+              <div className="mb-4 print:hidden"><TrialBanner sub={latestSubscription} /></div>
+            )}
             {children}
           </div>
         </main>

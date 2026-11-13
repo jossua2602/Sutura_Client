@@ -3,13 +3,14 @@ import { MailCheck } from 'lucide-react';
 
 // What an applicant sees after submitting. There's nothing to sign in to
 // yet — the System Admin issues the shop login on approval.
-export default function ApplicationSubmitted({ email }: { readonly email: string }) {
+export default function ApplicationSubmitted({ email, freeTrial = false }: { readonly email: string; readonly freeTrial?: boolean }) {
   return (
     <section role="status" className="py-4">
       <MailCheck size={32} className="text-sage" />
       <h2 className="mobile-h2 text-ink mt-5">Application submitted</h2>
       <p className="mobile-body-md text-ink-body mt-3">
-        Our team will review your documents and payment, usually within 1–2 business days. Once your shop is approved,
+        Our team will review your documents{freeTrial ? '' : ' and payment'}, usually within 1–2 business days.
+        {freeTrial && ' Your 14-day free trial starts the day your shop is approved.'} Once your shop is approved,
         we&apos;ll send your <strong className="font-semibold text-ink">shop login and a temporary password</strong> to:
       </p>
       <p className="mobile-body-lg text-ink mt-3 break-all">{email}</p>

@@ -41,7 +41,7 @@ export interface ShopFields {
   /** Province / City-Municipality / District / Barangay, picked from PSGC. */
   area: PsgcAddress;
   specializations: string[];
-  /** "Add Other Service": services typed in that aren't in the list (max 5). */
+  /** "Add Service": services typed in that aren't in the list (max 5). */
   custom_services: string[];
   location: SavedLocation | null;
   /** "Branches (Optional)": other locations, display only (stores.declared_branches), any plan. */

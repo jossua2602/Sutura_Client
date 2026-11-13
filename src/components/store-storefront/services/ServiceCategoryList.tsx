@@ -11,17 +11,9 @@ export interface ServiceGroup {
   services: PublicService[];
 }
 
-const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDigits: 0 })}`;
-
-/** Lowest listed base price in the group, for the card's "From ₱…" line. */
-function startingPrice(services: PublicService[]): number | null {
-  const prices = services.map((s) => Number(s.base_price)).filter((n) => Number.isFinite(n) && n > 0);
-  return prices.length ? Math.min(...prices) : null;
-}
-
 /**
  * One storefront category (Uniform, Alterations & Repairs…): photo from its
- * first service, the starting price, and "View Catalog", which opens the
+ * first service, how many services it has (prices are shown per service, inside), and "View Catalog", which opens the
  * category's services in a dialog (ServiceCategoryModal).
  */
 export default function ServiceCategoryCard({ group, onViewCatalog }: Readonly<{
@@ -29,7 +21,6 @@ export default function ServiceCategoryCard({ group, onViewCatalog }: Readonly<{
   onViewCatalog: () => void;
 }>) {
   const image = group.services.find((s) => s.image_url)?.image_url ?? null;
-  const from = startingPrice(group.services);
   const count = group.services.length;
 
   return (
@@ -54,9 +45,8 @@ export default function ServiceCategoryCard({ group, onViewCatalog }: Readonly<{
 
       <div className="flex flex-1 flex-col p-3.5 sm:p-4">
         <h3 className="text-base sm:text-lg font-medium leading-snug text-ink line-clamp-2">{group.label}</h3>
-        <p className="mt-1 mb-3 text-sm text-ink-body">
-          {from != null ? <>From <span className="font-semibold text-ink tabular-nums">{peso(from)}</span></> : <span className="text-ink-muted">Price on consultation</span>}
-          <span className="text-ink-muted"> · {count} {count === 1 ? 'service' : 'services'}</span>
+        <p className="mt-1 mb-3 text-sm text-ink-muted tabular-nums">
+          {count} {count === 1 ? 'service' : 'services'}
         </p>
 
         <button

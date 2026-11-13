@@ -37,6 +37,8 @@ export interface ServiceData {
   custom_fields?: ServiceField[] | null;
   tags?: string[];
   estimated_days?: number | null;
+  /** The service's price list ("Pricing options"); the order picks one. */
+  pricing?: { id: number; label: string; amount: string | number | null }[];
 }
 
 export interface StaffData {

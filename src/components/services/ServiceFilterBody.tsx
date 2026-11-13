@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { FilterOption, FilterSection } from '@/components/catalog/CatalogFilterBody';
-import { SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
 import { DEFAULT_SERVICE_SORT, SERVICE_PRICE_SORTS, isServicePriceSort, type ServiceSortOption } from './serviceSort';
 
 export type ServiceStatusFilter = '' | 'active' | 'paused';
@@ -15,7 +14,7 @@ export interface ServiceFilterState {
   readonly categoryFilter: string;
   readonly setCategoryFilter: (v: string) => void;
   /** Service categories this store actually has, with how many services in each. */
-  readonly categoryOptions: { value: string; count: number }[];
+  readonly categoryOptions: { value: string; label: string; count: number }[];
 }
 
 // The service page's filter sections — same shell and rows as the catalog's.
@@ -56,7 +55,7 @@ export default function ServiceFilterBody({
             <FilterOption selected={!categoryFilter} onClick={() => setCategoryFilter('')}>All Categories</FilterOption>
             {categoryOptions.map((c) => (
               <FilterOption key={c.value} selected={categoryFilter === c.value} onClick={() => setCategoryFilter(c.value)}>
-                {SERVICE_CATEGORY_LABELS[c.value as ServiceCategory] ?? c.value} ({c.count})
+                {c.label} ({c.count})
               </FilterOption>
             ))}
           </div>

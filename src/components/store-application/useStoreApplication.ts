@@ -27,7 +27,11 @@ export function useStoreApplication() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash');
   // Pay with GCash right after submitting (default), or attach a receipt of a payment already sent.
-  const [payOnline, setPayOnline] = useState(true);
+  const [payOnline, setPayOnlineRaw] = useState(true);
+  // Or a 14-day free trial of the picked plan: nothing to pay now (one per shop).
+  const [freeTrial, setFreeTrialRaw] = useState(false);
+  const setPayOnline = (online: boolean) => { setPayOnlineRaw(online); setFreeTrialRaw(false); };
+  const setFreeTrial = (trial: boolean) => { setFreeTrialRaw(trial); if (trial) setPayOnlineRaw(false); };
   // Privacy consent (Documents step) and the terms agreement (last step).
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -91,7 +95,7 @@ export function useStoreApplication() {
       form.append(`branches[${i}][barangay_code]`, b.area.barangay_code);
     });
     Object.entries(files).forEach(([key, file]) => {
-      if (key === 'payment_receipt' && payOnline) return;
+      if (key === 'payment_receipt' && (payOnline || freeTrial)) return;
       form.append(key, file);
     });
     permits.forEach((file) => form.append('business_permits[]', file));
@@ -99,8 +103,12 @@ export function useStoreApplication() {
     appendFaceMatch(form, files.selfie_with_id);
     form.append('plan_id', String(planId));
     form.append('billing_cycle', billingCycle);
-    form.append('payment_method', paymentMethod);
-    if (payOnline) form.append('pay_online', '1');
+    if (freeTrial) {
+      form.append('free_trial', '1');
+    } else {
+      form.append('payment_method', paymentMethod);
+      if (payOnline) form.append('pay_online', '1');
+    }
     form.append('privacy_consent', '1');
     form.append('terms_accepted', '1');
 
@@ -126,7 +134,7 @@ export function useStoreApplication() {
   return {
     step, goTo, owner, setOwner, shop, setShop, files, setFile, permits, setPermits,
     governmentIdType, setGovernmentIdType, plans, planId, setPlanId, billingCycle, setBillingCycle,
-    paymentMethod, setPaymentMethod, payOnline, setPayOnline, error, setError, submitting, submit, submittedTo,
+    paymentMethod, setPaymentMethod, payOnline, setPayOnline, freeTrial, setFreeTrial, error, setError, submitting, submit, submittedTo,
     privacyConsent, setPrivacyConsent, termsAccepted, setTermsAccepted,
   };
 }

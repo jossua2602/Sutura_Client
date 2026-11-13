@@ -18,6 +18,14 @@ interface Step4InvoicePaymentProps {
   setFormData: React.Dispatch<React.SetStateAction<JobCreateFormData>>;
   itemRate: string;
   setItemRate: (rate: string) => void;
+  /** ₱ off the total because the customer brings their own fabric (0 = none). */
+  fabricDeduction: number;
+  /** The service's price list; picking a line (e.g. "Pants only") sets the price. Optional. */
+  serviceName: string;
+  wholeServicePrice: number | null;
+  pricingOptions: { id: number; label: string; amount: string | number | null }[];
+  pricingId: number | null;
+  onSelectPricing: (pricingId: number | null) => void;
   paymentTerm: 'full' | 'downpayment';
   setPaymentTerm: (term: 'full' | 'downpayment') => void;
   /** Individual orders are always 1 piece; a bulk order's count comes from its size sheet. */
@@ -32,6 +40,12 @@ export default function Step4InvoicePayment({
   setFormData,
   itemRate,
   setItemRate,
+  fabricDeduction,
+  serviceName,
+  wholeServicePrice,
+  pricingOptions,
+  pricingId,
+  onSelectPricing,
   paymentTerm,
   setPaymentTerm,
   isBulkOrder,
@@ -43,8 +57,11 @@ export default function Step4InvoicePayment({
   const rate = parseFloat(itemRate) || 0;
   const rushFee = formData.is_rush ? parseFloat(formData.rush_fee) || 0 : 0;
 
-  // Total calculation
-  const computedNetTotal = rate > 0 ? (rate * qty + rushFee).toFixed(2) : formData.total_amount;
+  // Total = price × pieces + rush fee − customer's own fabric (never below zero).
+  const totalFor = (r: number, fee: number) => Math.max(0, r * qty + fee - fabricDeduction).toFixed(2);
+  const subtotal = rate * qty + rushFee;
+  const fabricTooHigh = fabricDeduction > 0 && rate > 0 && fabricDeduction > subtotal;
+  const computedNetTotal = rate > 0 ? totalFor(rate, rushFee) : formData.total_amount;
   const currentTotal = parseFloat(formData.total_amount || computedNetTotal || '0') || 0;
 
   const currentDeposit = paymentTerm === 'full'
@@ -56,7 +73,7 @@ export default function Step4InvoicePayment({
   const handleRateChange = (newRate: string) => {
     setItemRate(newRate);
     const parsedRate = parseFloat(newRate) || 0;
-    const newTotal = parsedRate > 0 ? (parsedRate * qty + rushFee).toFixed(2) : formData.total_amount;
+    const newTotal = parsedRate > 0 ? totalFor(parsedRate, rushFee) : formData.total_amount;
     setFormData((prev) => ({
       ...prev,
       total_amount: newTotal,
@@ -64,11 +81,19 @@ export default function Step4InvoicePayment({
     }));
   };
 
+  // Default is the whole service; a line from its price list replaces the price (still editable).
+  const pickLine = (id: number | null, amount: string | number | null) => {
+    onSelectPricing(id);
+    if (amount !== null && amount !== '' && Number.isFinite(Number(amount))) handleRateChange(String(Number(amount)));
+  };
+  const peso = (a: string | number | null) =>
+    a !== null && a !== '' && Number.isFinite(Number(a)) ? `₱${Number(a).toLocaleString('en-PH')}` : 'Quoted';
+
   const handleRushToggle = (checked: boolean) => {
     setFormData((prev) => {
       const nextRush = checked;
       const fee = nextRush ? (parseFloat(prev.rush_fee) || 200) : 0;
-      const newTotal = rate > 0 ? (rate * qty + fee).toFixed(2) : prev.total_amount;
+      const newTotal = rate > 0 ? totalFor(rate, fee) : prev.total_amount;
       return {
         ...prev,
         is_rush: nextRush,
@@ -98,6 +123,33 @@ export default function Step4InvoicePayment({
         <h3 className="text-xs font-bold uppercase tracking-wider text-ink-muted">
           Production Schedule & Item Quantities
         </h3>
+
+        {pricingOptions.length > 1 && (
+          <fieldset>
+            <legend className="block text-xs font-semibold text-ink mb-1.5">What are they ordering?</legend>
+            <div role="radiogroup" aria-label="What are they ordering?" className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {[{ id: null as number | null, label: `Whole service — ${serviceName}`, amount: wholeServicePrice as string | number | null }, ...pricingOptions].map((p) => {
+                const on = pricingId === p.id;
+                return (
+                  <button
+                    key={p.id ?? 'whole'}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => pickLine(p.id, p.amount)}
+                    className={`flex min-h-11 items-center justify-between gap-3 rounded-xl border px-3.5 text-left text-xs sm:text-sm transition-colors cursor-pointer ${
+                      on ? 'border-ink bg-ink text-white' : 'border-line bg-surface text-ink hover:border-ink'
+                    }`}
+                  >
+                    <span className="min-w-0 break-words font-semibold">{p.label}</span>
+                    <span className={`shrink-0 tabular-nums ${on ? 'text-white/80' : 'text-ink-muted'}`}>{peso(p.amount)}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-[11px] text-ink-muted">If they only want part of it, pick that line. You can still change the price below.</p>
+          </fieldset>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Due Date */}
@@ -177,7 +229,7 @@ export default function Step4InvoicePayment({
                   const fee = e.target.value;
                   setFormData((prev) => {
                     const parsedFee = parseFloat(fee) || 0;
-                    const newTot = rate > 0 ? (rate * qty + parsedFee).toFixed(2) : prev.total_amount;
+                    const newTot = rate > 0 ? totalFor(rate, parsedFee) : prev.total_amount;
                     return { ...prev, rush_fee: fee, total_amount: newTot };
                   });
                 }}
@@ -295,6 +347,22 @@ export default function Step4InvoicePayment({
         </div>
 
         <div className="space-y-2 text-xs sm:text-sm">
+          {fabricDeduction > 0 && (
+            <>
+              <div className="flex justify-between items-center text-ink-muted">
+                <span>Price{rushFee > 0 ? ' + rush fee' : ''}:</span>
+                <span className="tabular-nums">₱{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between items-center text-ink-muted">
+                <span>Less customer&apos;s own fabric:</span>
+                <span className="tabular-nums">− ₱{fabricDeduction.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+              {fabricTooHigh && (
+                <p role="alert" className="text-xs text-danger">The fabric deduction is more than the price. Go back and lower it.</p>
+              )}
+            </>
+          )}
+
           {/* Net Total */}
           <div className="flex justify-between items-center text-ink-muted">
             <span>Net Total Order Amount:</span>

@@ -11,14 +11,19 @@ const CYCLES: { value: BillingCycle; label: string }[] = [
   { value: 'yearly', label: 'Yearly' },
 ];
 // Plan payments are GCash only: in the GCash app right after submitting (default), or a
-// receipt of a payment already sent to SUTURA's GCash (the backup).
-const METHODS: { online: boolean; label: string; hint: string }[] = [
-  { online: true, label: 'Pay with GCash', hint: 'After you submit, you’ll pay in the GCash app.' },
-  { online: false, label: 'Upload a receipt', hint: 'Already sent it to SUTURA’s GCash? Attach the screenshot.' },
+// receipt of a payment already sent to SUTURA's GCash (the backup). Or a 14-day free trial.
+const TRIAL_DAYS = 14;
+type Method = 'online' | 'receipt' | 'trial';
+const METHODS: { key: Method; label: string; hint: string }[] = [
+  { key: 'online', label: 'Pay with GCash', hint: 'After you submit, you’ll pay in the GCash app.' },
+  { key: 'receipt', label: 'Upload a receipt', hint: 'Already sent it to SUTURA’s GCash? Attach the screenshot.' },
+  { key: 'trial', label: `Free trial: ${TRIAL_DAYS} days`, hint: 'Nothing to pay now. Choose a plan before it ends.' },
 ];
 
 export default function PlanStep({ app }: { readonly app: StoreApplicationState }) {
-  const { plans, planId, setPlanId, billingCycle, setBillingCycle, payOnline, setPayOnline, files, setFile, goTo, submit, submitting, termsAccepted, setTermsAccepted } = app;
+  const { plans, planId, setPlanId, billingCycle, setBillingCycle, payOnline, setPayOnline, freeTrial, setFreeTrial, files, setFile, goTo, submit, submitting, termsAccepted, setTermsAccepted } = app;
+  const method: Method = freeTrial ? 'trial' : payOnline ? 'online' : 'receipt';
+  const pick = (m: Method) => (m === 'trial' ? setFreeTrial(true) : setPayOnline(m === 'online'));
   const selected = plans.find((p) => p.id === planId);
   const price = selected ? (billingCycle === 'yearly' ? selected.price_yearly : selected.price_monthly) : 0;
 
@@ -57,12 +62,12 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
 
       <div className="space-y-4 border-t border-line pt-5">
         <div>
-          <p className="text-sm text-ink mb-2">Payment Method<span className="text-danger">*</span></p>
-          <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Payment method">
+          <p className="text-sm text-ink mb-2">How do you want to start?<span className="text-danger">*</span></p>
+          <div className="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Payment method">
             {METHODS.map((m) => {
-              const on = payOnline === m.online;
+              const on = method === m.key;
               return (
-                <button key={m.label} type="button" role="radio" aria-checked={on} onClick={() => setPayOnline(m.online)}
+                <button key={m.key} type="button" role="radio" aria-checked={on} onClick={() => pick(m.key)}
                   className={`min-h-12 border p-3 text-left ${on ? 'border-ink bg-ink text-white' : 'border-line-strong bg-surface text-ink'}`}>
                   <span className="block text-sm font-semibold">{m.label}</span>
                   <span className={`mt-1 block text-xs leading-relaxed ${on ? 'text-white/80' : 'text-ink-muted'}`}>{m.hint}</span>
@@ -71,7 +76,19 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
             })}
           </div>
         </div>
-        {payOnline ? (
+        {freeTrial ? (
+          <div className="border border-line bg-sunken p-4 mobile-body-sm text-ink-body">
+            <p>
+              You get <strong className="text-ink">{selected?.name ?? 'the plan you picked'}</strong> free for {TRIAL_DAYS} days,
+              starting when your shop is approved. No payment now.
+            </p>
+            <p className="mt-2">
+              Before it ends, choose a plan in Billing ({formatPeso(price)}/{billingCycle === 'yearly' ? 'yr' : 'mo'} for this one).
+              If you don&apos;t, your shop is paused: hidden from customers, with all your records kept until you pay.
+              One free trial per shop.
+            </p>
+          </div>
+        ) : payOnline ? (
           <div className="border border-line bg-sunken p-4 mobile-body-sm text-ink-body">
             <p><span className="text-ink-muted">Amount:</span> <strong className="text-ink tabular-nums">{formatPeso(price)}</strong></p>
             <p className="mt-2">
@@ -109,7 +126,7 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
         </span>
       </label>
 
-      <StepActions onBack={() => goTo(3)} nextLabel={submitting ? 'Submitting…' : payOnline ? 'Submit and Pay with GCash' : 'Submit Application'} busy={submitting || !selected || !termsAccepted} />
+      <StepActions onBack={() => goTo(3)} nextLabel={submitting ? 'Submitting…' : freeTrial ? 'Submit and Start Free Trial' : payOnline ? 'Submit and Pay with GCash' : 'Submit Application'} busy={submitting || !selected || !termsAccepted} />
     </form>
   );
 }

@@ -7,6 +7,8 @@ import EditableCard from './EditableCard';
 interface SpecializationsCardProps {
   readonly specializations: string[];
   readonly onChange: (specializations: string[]) => void;
+  readonly customServices: string[];
+  readonly onCustomChange: (customServices: string[]) => void;
   readonly isEditing: boolean;
   readonly saving: boolean;
   readonly onEdit: () => void;
@@ -14,19 +16,20 @@ interface SpecializationsCardProps {
   readonly onSave: () => void;
 }
 
-export default function SpecializationsCard({ specializations, onChange, isEditing, saving, onEdit, onCancel, onSave }: SpecializationsCardProps) {
-  const labels = specializations.map(specializationLabel);
+// The shop's Services: the standard ones it ticked plus its own, shown as one list.
+export default function SpecializationsCard({ specializations, onChange, customServices, onCustomChange, isEditing, saving, onEdit, onCancel, onSave }: SpecializationsCardProps) {
+  const labels = [...specializations.map(specializationLabel), ...customServices];
 
   return (
     <EditableCard
       icon={<Tag size={16} className="text-taupe" />}
-      title="Specializations"
+      title="Services"
       isEditing={isEditing}
       saving={saving}
       onEdit={onEdit}
       onCancel={onCancel}
       onSave={onSave}
-      editBody={<SpecializationsSelector specializations={specializations} onChange={onChange} />}
+      editBody={<SpecializationsSelector specializations={specializations} onChange={onChange} customServices={customServices} onCustomChange={onCustomChange} />}
     >
       {labels.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
@@ -35,7 +38,7 @@ export default function SpecializationsCard({ specializations, onChange, isEditi
           ))}
         </div>
       ) : (
-        <p className="text-xs text-ink-muted">No specializations selected yet — this affects how often you show up in search.</p>
+        <p className="text-xs text-ink-muted">No services selected yet — this affects how often you show up in search.</p>
       )}
     </EditableCard>
   );

@@ -289,12 +289,14 @@ export default function JobQuickViewModal({
               <div>
                 <p className="text-xs font-bold text-ink">Order Pending Review</p>
                 <p className="text-[11px] text-ink-muted">
-                  Approve to notify customer with live tracking link, or reject with notes.
+                  {isOwnerOrManager
+                    ? 'Approve to notify customer with live tracking link, or reject with notes.'
+                    : 'Waiting for the owner or branch manager to approve.'}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              {onReject && (
+              {onReject && isOwnerOrManager && (
                 <button
                   type="button"
                   disabled={actionLoadingId === currentJob.id}
@@ -304,7 +306,7 @@ export default function JobQuickViewModal({
                   Reject Order
                 </button>
               )}
-              {onApprove && (
+              {onApprove && isOwnerOrManager && (
                 <button
                   type="button"
                   disabled={actionLoadingId === currentJob.id}

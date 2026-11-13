@@ -60,10 +60,7 @@ export default function ApplicationSummary({ store, planPayment }: { readonly st
             </a>
           ) : null}
         </Row>
-        <Row label="Specializes in">{store.specializations?.map(specializationLabel).join(', ')}</Row>
-        {(store.custom_services?.length ?? 0) > 0 && (
-          <Row label="Other services">{store.custom_services!.join(', ')}</Row>
-        )}
+        <Row label="Services">{[...(store.specializations ?? []).map(specializationLabel), ...(store.custom_services ?? [])].join(', ')}</Row>
         {(store.declared_branches?.length ?? 0) > 0 && (
           <Row label="Other branches">
             <ul className="space-y-1">
@@ -78,8 +75,14 @@ export default function ApplicationSummary({ store, planPayment }: { readonly st
 
       <Card title="Plan & payment">
         <Row label="Requested plan">{app?.requested_plan?.name}</Row>
-        <Row label="Billing">{app ? `${app.billing_cycle} · ${formatPeso(app.quoted_price)}` : null}</Row>
-        <Row label="Paid via">{planPayment ? (online ? 'GCash' : 'GCash · Receipt') : app?.payment_method?.replace('_', ' ')}</Row>
+        {app?.free_trial ? (
+          <Row label="Payment"><span className="font-semibold text-ink">Free trial · 14 days</span><span className="block text-xs text-ink-muted">Nothing paid yet. The plan starts as a trial when you approve; the shop is paused if it doesn&apos;t pay before it ends.</span></Row>
+        ) : (
+          <>
+            <Row label="Billing">{app ? `${app.billing_cycle} · ${formatPeso(app.quoted_price)}` : null}</Row>
+            <Row label="Paid via">{planPayment ? (online ? 'GCash' : 'GCash · Receipt') : app?.payment_method?.replace('_', ' ')}</Row>
+          </>
+        )}
         {online && planPayment && (
           <Row label="Payment">
             {planPayment.paid

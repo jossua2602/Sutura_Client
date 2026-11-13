@@ -70,8 +70,9 @@ export function validateSection(section: ServiceSection, d: ServiceDraft): strin
     }
   }
   if (section === 'spec') {
-    if (!d.service_category) return 'Pick a category.';
-    if (!d.showcase_category) return 'Pick where it shows on your shop page.';
+    if (!d.showcase_category || !d.service_category) return 'Pick a category.';
+    // Customers narrow Uniform by its type, so a uniform service needs one.
+    if (d.service_category === 'uniform_production' && !d.service_leaf_type) return 'Pick the uniform type.';
     if (d.tiers.every((t) => t.label.trim() === '')) return 'Add at least one priced item.';
   }
   if (section === 'requirements') return validateRequirements(d.requirements);

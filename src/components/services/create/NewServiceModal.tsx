@@ -7,26 +7,10 @@ import { getErrorMessage } from '@/lib/apiError';
 import { getMediaUrl } from '@/lib/media';
 import { useToast } from '@/context/ToastContext';
 import Modal from '@/components/Modal';
-import { SHOWCASE_CATEGORIES } from '@/lib/serviceShowcase';
+import { searchCategoryFor, useShopCategories } from '../useShopCategories';
+import { UNIFORM_TYPES, guessUniformType } from '@/lib/uniformTypes';
 import { useImageUpload } from '../detail/ImageUploadField';
 import { buildServicePayload, emptyServiceDraft, validateSection, type ServiceDraft } from '../detail/serviceEditing';
-import type { ServiceCategory } from '@/lib/canonicalTaxonomy';
-
-// One Category drives both taxonomies: the storefront chip (showcase) and the
-// search / job-order category (service_category) it maps onto.
-const SEARCH_CATEGORY: Record<string, ServiceCategory> = {
-  custom_tailoring: 'custom_tailoring',
-  formal: 'custom_tailoring',
-  casual: 'custom_tailoring',
-  alterations_repairs: 'alterations_repairs',
-  uniform: 'uniform_production',
-  office: 'uniform_production',
-  school: 'uniform_production',
-  medical: 'uniform_production',
-  maritime: 'uniform_production',
-  sports: 'printing_sublimation',
-  embroidery: 'others',
-};
 
 const LABEL = 'mb-1.5 block text-sm font-medium text-ink';
 const INPUT = 'h-11 w-full border border-line-strong bg-white px-3 text-sm text-ink placeholder:text-ink-faint focus:border-taupe focus:outline-none focus:ring-2 focus:ring-taupe/20 disabled:bg-sunken disabled:text-ink-faint';
@@ -50,6 +34,9 @@ export default function NewServiceModal({ isOpen, storeId, onClose, onCreated }:
   const [d, setDraft] = useState<ServiceDraft>(emptyServiceDraft);
   const [saving, setSaving] = useState(false);
   const patch = (p: Partial<ServiceDraft>) => setDraft((prev) => ({ ...prev, ...p }));
+  // One Category: only the services this shop lists on its profile. It also sets the
+  // search / job-order category (service_category) behind the scenes.
+  const { options: categories, loading: categoriesLoading } = useShopCategories(isOpen ? storeId : undefined);
 
   const close = () => {
     if (saving) return;
@@ -59,7 +46,9 @@ export default function NewServiceModal({ isOpen, storeId, onClose, onCreated }:
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const problem = validateSection('info', d) ?? (d.showcase_category ? null : 'Pick a category.');
+    const problem = validateSection('info', d)
+      ?? (d.showcase_category ? null : 'Pick a category.')
+      ?? (d.showcase_category === 'uniform' && !d.service_leaf_type ? 'Pick the uniform type.' : null);
     if (problem) return toast.error(problem);
 
     // The API needs at least one priced row: the service itself at its starting price.
@@ -137,14 +126,33 @@ export default function NewServiceModal({ isOpen, storeId, onClose, onCreated }:
             <select
               id="svc-category"
               value={d.showcase_category}
-              onChange={(e) => patch({ showcase_category: e.target.value, service_category: SEARCH_CATEGORY[e.target.value] ?? '' })}
+              onChange={(e) => patch({
+                showcase_category: e.target.value,
+                service_category: searchCategoryFor(e.target.value),
+                // Uniform: suggest the kind from the name ("PNP Uniform" → PNP / Police).
+                service_leaf_type: e.target.value === 'uniform' ? guessUniformType(d.name) : '',
+              })}
               className={INPUT}
             >
-              <option value="">Choose a category…</option>
-              {SHOWCASE_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              <option value="">{categoriesLoading ? 'Loading your services…' : 'Choose a category…'}</option>
+              {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
-            <p className="mt-1 text-xs text-ink-muted">Where it shows on your shop page and in search.</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              {!categoriesLoading && categories.length === 0
+                ? 'Your shop has no services listed yet. Add them on your shop page (About → Services) first.'
+                : 'From the services on your shop profile. It sets where this shows on your shop page and in search.'}
+            </p>
           </div>
+
+          {d.showcase_category === 'uniform' && (
+            <div>
+              <label htmlFor="svc-uniform-type" className={LABEL}>Uniform type {REQ}</label>
+              <select id="svc-uniform-type" value={d.service_leaf_type} onChange={(e) => patch({ service_leaf_type: e.target.value })} className={INPUT}>
+                {UNIFORM_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+              <p className="mt-1 text-xs text-ink-muted">Customers looking for this kind of uniform find your shop under it.</p>
+            </div>
+          )}
         </div>
 
         {/* ── 3: turnaround + description (full width on tablets) ── */}

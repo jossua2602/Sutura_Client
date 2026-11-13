@@ -8,6 +8,7 @@ import { getMediaUrl } from '@/lib/media';
 import { haversineKm, type SavedLocation } from '@/lib/customerLocation';
 import { formatAddress } from '@/lib/formatAddress';
 import { STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
+import { uniformTypeLabel } from '@/lib/uniformTypes';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { isStoreOpen } from '@/lib/storeStatus';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
@@ -61,6 +62,18 @@ export default function HomeStoresGrid({ location }: { readonly location: SavedL
   const gate = useGuestGatedHref();
 
   const [specialization, setSpecialization] = useState('');
+  // Under "Uniform": the kind of uniform (PNP, BFP, school…), from the types shops actually offer.
+  const [uniformType, setUniformType] = useState('');
+  const [uniformTypes, setUniformTypes] = useState<{ value: string; shops: number }[]>([]);
+  const pickSpecialization = (value: string) => { setSpecialization(value); setUniformType(''); };
+  useEffect(() => {
+    if (specialization !== 'uniform') return;
+    let cancelled = false;
+    api.get('/public/uniform-types')
+      .then((res) => { if (!cancelled) setUniformTypes(res.data.data ?? []); })
+      .catch(() => { if (!cancelled) setUniformTypes([]); });
+    return () => { cancelled = true; };
+  }, [specialization]);
   const [openNow, setOpenNow] = useState(false);
   const [minRating, setMinRating] = useState(0);
   const [radius, setRadius] = useState<number>(DEFAULT_RADIUS);
@@ -80,6 +93,7 @@ export default function HomeStoresGrid({ location }: { readonly location: SavedL
     const id = setTimeout(async () => {
       const base: Record<string, string | number> = { per_page: 10 };
       if (specialization) base.specialization = specialization;
+      if (specialization === 'uniform' && uniformType) base.uniform_type = uniformType;
       if (openNow) base.open_now = 1;
       if (minRating) base.min_rating = minRating;
       if (location) {
@@ -111,7 +125,7 @@ export default function HomeStoresGrid({ location }: { readonly location: SavedL
       }
     }, 300);
     return () => { cancelled = true; clearTimeout(id); };
-  }, [location, radius, specialization, openNow, minRating]);
+  }, [location, radius, specialization, uniformType, openNow, minRating]);
 
   const expandTo = useMemo(() => {
     if (nearestKm === null) return null;
@@ -173,18 +187,33 @@ export default function HomeStoresGrid({ location }: { readonly location: SavedL
           <div role="group" aria-label="Specialty">
             <span className={groupLabel}>Specialty</span>
             <div className="-mx-4 flex gap-2 overflow-x-auto hide-scrollbar px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-              <button type="button" aria-pressed={specialization === ''} onClick={() => setSpecialization('')} className={chip(specialization === '')}>
+              <button type="button" aria-pressed={specialization === ''} onClick={() => pickSpecialization('')} className={chip(specialization === '')}>
                 <Store size={13} aria-hidden="true" /> All shops
               </button>
-              {/* Specialty services only: the Men's / Women's / Children's Apparel
-                  chips are left out of this filter (shops still declare them). */}
-              {STORE_SPECIALIZATIONS.filter((s) => s.group !== 'Apparel').map((s) => (
+              {STORE_SPECIALIZATIONS.map((s) => (
                 <button key={s.value} type="button" aria-pressed={specialization === s.value}
-                  onClick={() => setSpecialization(specialization === s.value ? '' : s.value)} className={chip(specialization === s.value)}>
+                  onClick={() => pickSpecialization(specialization === s.value ? '' : s.value)} className={chip(specialization === s.value)}>
                   {s.label}
                 </button>
               ))}
             </div>
+            {specialization === 'uniform' && uniformTypes.length > 0 && (
+              <div role="group" aria-label="Uniform type" className="mt-3">
+                <span className={groupLabel}>Uniform type</span>
+                <div className="-mx-4 flex gap-2 overflow-x-auto hide-scrollbar px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+                  <button type="button" aria-pressed={uniformType === ''} onClick={() => setUniformType('')} className={chip(uniformType === '')}>
+                    All uniforms
+                  </button>
+                  {uniformTypes.map((t) => (
+                    <button key={t.value} type="button" aria-pressed={uniformType === t.value}
+                      onClick={() => setUniformType(uniformType === t.value ? '' : t.value)} className={chip(uniformType === t.value)}>
+                      {uniformTypeLabel(t.value)}
+                      <span className="font-normal opacity-70 tabular-nums">{t.shops}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap items-start gap-x-8 gap-y-5 border-t border-line pt-5">

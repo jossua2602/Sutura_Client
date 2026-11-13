@@ -88,13 +88,18 @@ export default function StoreServicesTab({
     );
   });
 
-  // Every category this shop uses (canonical order), each with its services.
-  const groups = useMemo(
-    () => SHOWCASE_CATEGORIES
-      .map((c) => ({ value: c.value, label: c.label, services: filteredServices.filter((s) => groupOf(s) === c.value) }))
-      .filter((g) => g.services.length > 0),
-    [filteredServices],
-  );
+  // Every category this shop uses: the standard ones in their order, then the shop's own
+  // services ("+ Add Service"), each with its services.
+  const groups = useMemo(() => {
+    const standard = new Set(SHOWCASE_CATEGORIES.map((c) => c.value));
+    const own = [...new Set(filteredServices.map(groupOf).filter((g) => !standard.has(g)))];
+    return [
+      ...SHOWCASE_CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
+      ...own.map((name) => ({ value: name, label: name })),
+    ]
+      .map((c) => ({ ...c, services: filteredServices.filter((s) => groupOf(s) === c.value) }))
+      .filter((g) => g.services.length > 0);
+  }, [filteredServices]);
 
   // Every design shows here. New designs are always linked to a service (the
   // Create modal picks one), so filtering to unlinked ones would hide them.

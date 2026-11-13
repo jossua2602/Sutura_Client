@@ -23,6 +23,8 @@ export interface Subscription {
   status: string;
   starts_at: string;
   ends_at: string;
+  /** Set when the shop started on a free trial. */
+  trial_ends_at?: string | null;
   billing_cycle?: string;
   /** A downgrade queued for when this period ends (paid one: scheduled_payment_id). */
   scheduled_plan_id?: number | null;

@@ -413,16 +413,17 @@ export default function InteractiveCalendar({
                     : undefined
                 }
                 aria-label={blocked && !booked ? `${formatSlotLabel(slot)} — unavailable` : undefined}
-                className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all flex items-center justify-between gap-1.5 ${slotClass}`}
+                // Tag sits under the time (not beside it), so it never overlaps in narrow slots.
+                className={`min-h-14 py-2 px-2 rounded-lg border text-sm font-medium transition-all flex flex-col items-center justify-center gap-1 text-center ${slotClass}`}
               >
-                <span className={booked ? 'line-through' : ''}>{formatSlotLabel(slot)}</span>
+                <span className={`leading-tight ${booked ? 'line-through' : ''}`}>{formatSlotLabel(slot)}</span>
                 {booked && (
-                  <span className="text-[9px] font-bold uppercase no-underline tracking-wider bg-canvas border border-line px-1 rounded text-ink-faint">
+                  <span className="text-[9px] font-bold uppercase tracking-wider bg-emerald-100 border border-emerald-300 px-1.5 rounded text-emerald-800">
                     Booked
                   </span>
                 )}
                 {hasPendingOnly && !isBooked && selectedTime !== slot && (
-                  <span className="text-[9px] font-bold uppercase no-underline tracking-wider bg-amber-100 border border-amber-300 px-1 rounded text-amber-800">
+                  <span className="text-[9px] font-bold uppercase tracking-wider bg-amber-100 border border-amber-300 px-1.5 rounded text-amber-800">
                     Pending
                   </span>
                 )}

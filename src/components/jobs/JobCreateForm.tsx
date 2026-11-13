@@ -122,6 +122,26 @@ export default function JobCreateForm() {
 
   // Step 4: Invoice & Payment
   const [itemRate, setItemRate] = useState<string>('');
+  // ₱ off the total when the customer brings their own fabric (only counts with that fabric source).
+  const [fabricDeduction, setFabricDeductionRaw] = useState('');
+  // A total already worked out on step 4 follows the change (e.g. ₱200 → ₱300 takes ₱100 more off).
+  const setFabricDeduction = (next: string) => {
+    const before = Math.max(0, Number(fabricDeduction) || 0);
+    const after = Math.max(0, Number(next) || 0);
+    setFabricDeductionRaw(next);
+    if (before === after) return;
+    setFormData((prev) => {
+      const total = parseFloat(prev.total_amount);
+      if (!Number.isFinite(total) || prev.total_amount === '') return prev;
+      const nextTotal = Math.max(0, total + before - after).toFixed(2);
+      return { ...prev, total_amount: nextTotal, downpayment: paymentTerm === 'full' ? nextTotal : prev.downpayment };
+    });
+  };
+  // The line picked from the service's price list ("Pricing options").
+  const [pricingId, setPricingId] = useState<number | null>(null);
+  const selectedService = services.find((s) => s.id.toString() === formData.service_id);
+  const servicePricing = selectedService?.pricing ?? [];
+  const selectedPricing = servicePricing.find((p) => p.id === pricingId) ?? null;
   const [paymentTerm, setPaymentTerm] = useState<'full' | 'downpayment'>('downpayment');
 
   // Sync incoming customer if prefilled from query
@@ -278,6 +298,10 @@ export default function JobCreateForm() {
       setWizardError('Please select a Type of Service before proceeding.');
       return;
     }
+    if (formData.material_source === 'customer_supplied' && fabricDeduction !== '' && !(Number(fabricDeduction) >= 0)) {
+      setWizardError('Enter a valid amount for the customer\'s fabric, or leave it empty.');
+      return;
+    }
     if (orderType === 'alteration' && !preExistingDamageNotes.trim()) {
       setWizardError('Please document any pre-existing garment condition or damage notes for alteration jobs.');
       return;
@@ -291,6 +315,15 @@ export default function JobCreateForm() {
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!store) return;
+
+    // The fabric deduction can't be more than the price itself.
+    const fabricLess = formData.material_source === 'customer_supplied' ? Number(fabricDeduction) || 0 : 0;
+    const priceBeforeFabric = (parseFloat(itemRate) || 0) * (isBulkOrder ? Math.max(1, parseInt(formData.quantity, 10) || 1) : 1)
+      + (formData.is_rush ? parseFloat(formData.rush_fee) || 0 : 0);
+    if (fabricLess > 0 && priceBeforeFabric > 0 && fabricLess > priceBeforeFabric) {
+      setWizardError("The customer's fabric deduction is more than the price. Lower it on the Order Specs step.");
+      return;
+    }
 
     if (!fullName.trim()) {
       setWizardError('Customer name is required.');
@@ -362,6 +395,12 @@ export default function JobCreateForm() {
           team_roster: isBulkOrder ? roster : null,
           pre_existing_damage_notes: orderType === 'alteration' ? preExistingDamageNotes.trim() : null,
           item_rate: itemRate || null,
+          // Shown on the order and work ticket ("own fabric deduction: ₱200.00").
+          own_fabric_deduction: formData.material_source === 'customer_supplied' && Number(fabricDeduction) > 0
+            ? `₱${Number(fabricDeduction).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            : null,
+          // Same key the customer's own order uses, so the job shows which part was ordered.
+          option: selectedPricing ? selectedPricing.label : null,
           payment_term: paymentTerm,
         },
         appointment_id: appointmentId ? Number(appointmentId) : null,
@@ -494,11 +533,21 @@ export default function JobCreateForm() {
           onSelectCatalogItem={handleCatalogPick}
           services={services}
           selectedServiceId={formData.service_id}
-          onSelectService={(svcId) => setFormData((prev) => ({ ...prev, service_id: svcId }))}
+          onSelectService={(svcId) => {
+            setFormData((prev) => ({ ...prev, service_id: svcId }));
+            // A new service starts as "the whole service" again.
+            setPricingId(null);
+          }}
           garmentCategory={formData.garment_category}
           setGarmentCategory={(cat) => setFormData((prev) => ({ ...prev, garment_category: cat }))}
           fabricSource={formData.material_source}
-          setFabricSource={(src) => setFormData((prev) => ({ ...prev, material_source: src }))}
+          setFabricSource={(src) => {
+            setFormData((prev) => ({ ...prev, material_source: src }));
+            // Shop fabric: nothing to take off.
+            if (src !== 'customer_supplied') setFabricDeduction('');
+          }}
+          fabricDeduction={fabricDeduction}
+          setFabricDeduction={setFabricDeduction}
           referenceImages={referenceImages}
           setReferenceImages={setReferenceImages}
           referenceLink={referenceLink}
@@ -523,6 +572,12 @@ export default function JobCreateForm() {
           setFormData={setFormData}
           itemRate={itemRate}
           setItemRate={setItemRate}
+          fabricDeduction={formData.material_source === 'customer_supplied' ? Math.max(0, Number(fabricDeduction) || 0) : 0}
+          serviceName={selectedService?.name ?? ''}
+          wholeServicePrice={selectedService?.base_price != null ? Number(selectedService.base_price) : null}
+          pricingOptions={catalogItemId ? [] : servicePricing}
+          pricingId={pricingId}
+          onSelectPricing={setPricingId}
           paymentTerm={paymentTerm}
           setPaymentTerm={setPaymentTerm}
           isBulkOrder={isBulkOrder}

@@ -39,6 +39,9 @@ interface Step3OrderSpecsProps {
   // Fabric Source
   fabricSource: 'store_supplied' | 'customer_supplied';
   setFabricSource: (source: 'store_supplied' | 'customer_supplied') => void;
+  /** ₱ taken off the total because the customer brings the fabric (optional). */
+  fabricDeduction: string;
+  setFabricDeduction: (amount: string) => void;
   // Reference Materials
   referenceImages: string[];
   setReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;
@@ -74,6 +77,8 @@ export default function Step3OrderSpecs({
   setGarmentCategory,
   fabricSource,
   setFabricSource,
+  fabricDeduction,
+  setFabricDeduction,
   referenceImages,
   setReferenceImages,
   referenceLink,
@@ -317,6 +322,26 @@ export default function Step3OrderSpecs({
             Customer Brings Own Fabric
           </button>
         </div>
+
+        {fabricSource === 'customer_supplied' && (
+          <div className="mt-3 max-w-md">
+            <label htmlFor="fabric-deduction" className="block text-xs font-semibold text-ink mb-1.5">
+              Less for customer&apos;s fabric (₱)
+            </label>
+            <input
+              id="fabric-deduction"
+              type="number"
+              min="0"
+              step="10"
+              inputMode="decimal"
+              value={fabricDeduction}
+              onChange={(e) => setFabricDeduction(e.target.value)}
+              placeholder="e.g. 200 (leave empty if none)"
+              className="w-full h-11 px-3.5 bg-surface border border-line rounded-xl text-xs sm:text-sm font-bold text-ink tabular-nums focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
+            />
+            <p className="mt-1.5 text-[11px] text-ink-muted">The customer won&apos;t pay for fabric, so this is taken off the total on the next step.</p>
+          </div>
+        )}
       </div>
 
       {/* If Alterations: Pre-existing Damage Notes */}
