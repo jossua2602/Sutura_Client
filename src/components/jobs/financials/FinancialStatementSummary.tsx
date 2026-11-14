@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Receipt, Printer, CheckCircle2, Tag } from 'lucide-react';
+import { Receipt, Printer, CheckCircle2, Tag, Scissors } from 'lucide-react';
 import { Job } from '../jobTypes';
 import { ComputedFinancials } from './financialsTypes';
 
@@ -22,6 +22,10 @@ export function FinancialStatementSummary({ job, financials }: FinancialStatemen
     statusBadge,
   } = financials;
   const markerLeft = totalAmount > 0 ? Math.min(100, (requiredDeposit / totalAmount) * 100) : 0;
+  // Fabric deductions added after the order was placed are stored with discounts (discount_amount);
+  // own_fabric_deduction_after says how much of it was for the customer's fabric.
+  const fabricAfter = Math.min(discountApplied, Number((job.custom_order_data as Record<string, unknown> | null)?.own_fabric_deduction_after) || 0);
+  const courtesyDiscount = Math.max(0, Math.round((discountApplied - fabricAfter) * 100) / 100);
 
   return (
     <div className="space-y-5">
@@ -93,13 +97,24 @@ export function FinancialStatementSummary({ job, financials }: FinancialStatemen
           <span className="font-bold text-emerald-700">−₱{amountPaid.toFixed(2)}</span>
         </div>
 
-        {discountApplied > 0 && (
+        {/* A fabric deduction added on this tab is stored with discounts; show it under its own name. */}
+        {fabricAfter > 0 && (
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-taupe-dark font-medium flex items-center gap-1">
+              <Scissors size={12} className="text-taupe" />
+              Own Fabric Deduction:
+            </span>
+            <span className="font-bold text-taupe-dark">−₱{fabricAfter.toFixed(2)}</span>
+          </div>
+        )}
+
+        {courtesyDiscount > 0 && (
           <div className="flex justify-between items-center text-xs">
             <span className="text-rose-700 font-medium flex items-center gap-1">
               <Tag size={12} className="text-rose-600" />
               Courtesy Discount:
             </span>
-            <span className="font-bold text-rose-700">−₱{discountApplied.toFixed(2)}</span>
+            <span className="font-bold text-rose-700">−₱{courtesyDiscount.toFixed(2)}</span>
           </div>
         )}
 

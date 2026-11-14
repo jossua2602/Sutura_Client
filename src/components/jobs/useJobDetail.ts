@@ -234,23 +234,24 @@ export function useJobDetail(jobId: string) {
 
   // One-time, in-the-moment discount (e.g. a repeat customer) — reduces the
   // remaining balance directly and is logged to the audit trail server-side.
-  const handleApplyDiscount = async (amount: number, reason: string) => {
+  const handleApplyDiscount = async (amount: number, reason: string, kind: 'discount' | 'fabric' = 'discount') => {
     if (!store || !job) return;
     setSaving(true);
     try {
       await api.post(`/stores/${store.id}/jobs/${job.id}/discount`, {
         amount,
         reason: reason || undefined,
+        kind,
       });
       const res = await api.get(`/stores/${store.id}/jobs/${job.id}`);
       const updatedJob = res.data.data;
       setJob(updatedJob);
       setBalance(updatedJob.balance);
       setPaymentStatus(updatedJob.payment_status);
-      toast.success(`₱${amount.toFixed(2)} discount applied successfully.`);
+      toast.success(kind === 'fabric' ? `₱${amount.toFixed(2)} fabric deduction applied.` : `₱${amount.toFixed(2)} discount applied successfully.`);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to apply discount.');
+      toast.error(error.response?.data?.message || (kind === 'fabric' ? 'Failed to apply the fabric deduction.' : 'Failed to apply discount.'));
       throw err;
     } finally {
       setSaving(false);

@@ -124,6 +124,7 @@ export default function OrderInvoiceStep({ o }: Readonly<{ o: ServiceOrderState 
         <dl className="divide-y divide-line">
           <Line label="Item rate" value={o.unitPrice > 0 ? peso(o.unitPrice) : 'Quoted by shop'} />
           <Line label="Quantity" value={`× ${o.pieces}`} />
+          {o.fabricDeduction > 0 && <Line label="Own fabric deduction" value={`− ${peso(o.fabricDeduction)}`} />}
           {o.rushRequested && <Line label="Rush fee" value="Set by the shop" />}
           <Line label="Estimated total" value={o.estimatedTotal !== null ? peso(o.estimatedTotal) : 'Quoted by shop'} strong />
           {o.dueNow !== null && o.dueNow > 0 && (

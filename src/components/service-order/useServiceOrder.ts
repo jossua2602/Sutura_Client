@@ -192,7 +192,12 @@ export function useServiceOrder(storeId: string) {
     const onSale = Number.isFinite(sale) && sale > 0 && sale < base && saleIsLive(service);
     return onSale ? sale : base;
   }, [selectedPricing, service]);
-  const estimatedTotal = Number.isFinite(unitPrice) && unitPrice > 0 ? unitPrice * pieces : null;
+  // Own fabric: the service's per-piece deduction comes off before the total and deposit (same rule as the server).
+  const fabricDeductionEach = materialSource === 'own' && Number.isFinite(unitPrice)
+    ? Math.min(Math.max(0, Number(service?.own_fabric_deduction) || 0), unitPrice)
+    : 0;
+  const fabricDeduction = Math.round(fabricDeductionEach * pieces * 100) / 100;
+  const estimatedTotal = Number.isFinite(unitPrice) && unitPrice > 0 ? (unitPrice - fabricDeductionEach) * pieces : null;
 
   const policy = requirements?.payment_policy ?? 'deposit';
   const depositPercent = policy === 'none' ? 0 : policy === 'full' ? 100 : requirements?.payment_policy_percent ?? 50;
@@ -382,6 +387,8 @@ export function useServiceOrder(storeId: string) {
     depositPercent,
     requirements,
     unitPrice,
+    fabricDeductionEach,
+    fabricDeduction,
     estimatedTotal,
     dueNow,
     gcashAccounts,

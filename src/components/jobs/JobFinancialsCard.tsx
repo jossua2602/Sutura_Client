@@ -7,6 +7,7 @@ import { useJobFinancials } from './financials/useJobFinancials';
 import { FinancialStatementSummary } from './financials/FinancialStatementSummary';
 import { PaymentAuditLedger } from './financials/PaymentAuditLedger';
 import { JobCashierDesk } from './financials/JobCashierDesk';
+import FabricDeductionBox from './financials/FabricDeductionBox';
 
 export default function JobFinancialsCard({
   job,
@@ -135,6 +136,9 @@ export default function JobFinancialsCard({
             onConfirmCharge={confirmCharge}
             onCancelChargeReview={cancelChargeReview}
           />
+          {isOwnerOrManager && (
+            <FabricDeductionBox job={job} financials={financials} onApply={(amount, reason, kind) => onApplyDiscount(amount, reason, kind)} />
+          )}
         </div>
       </div>
     </div>

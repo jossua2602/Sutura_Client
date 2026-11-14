@@ -35,6 +35,8 @@ export interface PublicService {
   estimated_days: number | null;
   estimated_days_max?: number | null;
   min_order_qty?: number | null;
+  /** Per-piece amount off when the customer brings their own fabric (null = none set). */
+  own_fabric_deduction?: number | string | null;
   /** What an online order asks of the customer: service setting, else the shop default. */
   order_requirements?: {
     measurement_requirement: 'none' | 'existing' | 'shop';

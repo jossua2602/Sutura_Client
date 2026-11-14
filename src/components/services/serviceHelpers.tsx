@@ -67,6 +67,8 @@ export interface Service extends RequirementFields {
   estimated_days: number | null;
   estimated_days_max?: number | null;
   min_order_qty?: number;
+  /** Per-piece amount off when the customer brings their own fabric (null = none set). */
+  own_fabric_deduction?: number | string | null;
   is_active: boolean;
   image_url?: string | null;
   size_chart_image_url?: string | null;

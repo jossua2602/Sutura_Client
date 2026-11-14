@@ -96,6 +96,25 @@ export function ServiceInfoEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
           <input id="svc-minqty" type="number" min="1" value={d.min_order_qty} onChange={e => patch({ min_order_qty: e.target.value })} className={FIELD} />
         </div>
       )}
+      <div className="sm:col-span-2">
+        <label htmlFor="svc-fabric" className={LABEL}>
+          Less if customer brings own fabric <span className="font-normal text-ink-faint">(optional, ₱ per piece)</span>
+        </label>
+        <input
+          id="svc-fabric"
+          type="number"
+          min="0"
+          step="1"
+          inputMode="decimal"
+          value={d.own_fabric_deduction}
+          onChange={e => patch({ own_fabric_deduction: e.target.value })}
+          placeholder="e.g. 150"
+          className={FIELD}
+        />
+        <p className="text-[11px] text-ink-faint mt-1.5">
+          Taken off the price on online orders when the customer chooses to bring their own fabric. Leave blank to adjust it on each order instead.
+        </p>
+      </div>
     </div>
   );
 }

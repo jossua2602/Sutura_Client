@@ -15,6 +15,12 @@ interface JobSpecCardProps {
   onMeasurementChanged?: () => void;
 }
 
+// Friendlier names for keys stored on the order (others show as their key with spaces).
+const SPEC_LABELS: Record<string, string> = {
+  own_fabric_deduction: 'Own fabric deduction (₱)',
+  own_fabric_deduction_after: 'Fabric deduction added later (₱)',
+};
+
 export default function JobSpecCard({ job, onScheduleMeasurement, onMeasurementChanged }: JobSpecCardProps) {
   const resolvedCategory =
     job.service?.category ||
@@ -138,7 +144,7 @@ export default function JobSpecCard({ job, onScheduleMeasurement, onMeasurementC
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
             {customSpecEntries.map(([label, value]) => (
               <div key={label} className="text-xs">
-                <span className="text-[10px] font-bold text-ink-muted uppercase block truncate">{label.replaceAll('_', ' ')}</span>
+                <span className="text-[10px] font-bold text-ink-muted uppercase block truncate">{SPEC_LABELS[label] ?? label.replaceAll('_', ' ')}</span>
                 <span className="font-semibold text-ink block truncate">
                   {typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' ? String(value) : '—'}
                 </span>

@@ -14,6 +14,8 @@ export interface ServiceDraft {
   estimated_days_max: string;
   turnaround_depends: boolean;
   min_order_qty: string;
+  /** Per-piece amount off when the customer brings their own fabric ('' = none). */
+  own_fabric_deduction: string;
   service_category: string;
   /** The storefront "Service Categories" chip it sits under (lib/serviceShowcase). */
   showcase_category: string;
@@ -36,6 +38,7 @@ export function toDraft(service: Service): ServiceDraft {
     estimated_days_max: service.estimated_days_max != null ? String(service.estimated_days_max) : '',
     turnaround_depends: service.estimated_days == null,
     min_order_qty: service.min_order_qty != null ? String(service.min_order_qty) : '1',
+    own_fabric_deduction: service.own_fabric_deduction != null && Number(service.own_fabric_deduction) > 0 ? String(Number(service.own_fabric_deduction)) : '',
     service_category: service.service_category ?? '',
     showcase_category: service.showcase_category ?? '',
     service_leaf_type: service.service_leaf_type ?? '',
@@ -54,7 +57,7 @@ export function toDraft(service: Service): ServiceDraft {
 }
 
 export const emptyServiceDraft = (): ServiceDraft => ({
-  name: '', description: '', base_price: '', estimated_days: '', estimated_days_max: '', turnaround_depends: false, min_order_qty: '1',
+  name: '', description: '', base_price: '', estimated_days: '', estimated_days_max: '', turnaround_depends: false, min_order_qty: '1', own_fabric_deduction: '',
   service_category: '', showcase_category: '', service_leaf_type: '', service_types: [], tiers: [{ label: '', amount: '' }],
   image_url: '', sizeChart: emptySizeChart, custom_fields: [], roster_fields: [], requirements: emptyRequirementsDraft(),
 });
@@ -101,6 +104,7 @@ export function buildServicePayload(service: Service | null, draft: ServiceDraft
     estimated_days: draft.turnaround_depends || draft.estimated_days.trim() === '' ? null : Number.parseInt(draft.estimated_days, 10),
     estimated_days_max: draft.turnaround_depends || draft.estimated_days_max.trim() === '' ? null : Number.parseInt(draft.estimated_days_max, 10),
     min_order_qty: Number.parseInt(draft.min_order_qty, 10) || 1,
+    own_fabric_deduction: draft.own_fabric_deduction.trim() === '' ? null : Number.parseFloat(draft.own_fabric_deduction),
     custom_fields: draft.custom_fields.filter((f) => f.label.trim() !== ''),
     roster_fields: draft.service_types.includes('bulk_sublimation') ? draft.roster_fields : [],
     is_active: isActive,
@@ -115,7 +119,7 @@ export function buildServicePayload(service: Service | null, draft: ServiceDraft
 
 const SECTION_FIELDS: Record<ServiceSection, (keyof ServiceDraft)[]> = {
   photo: ['image_url'],
-  info: ['name', 'base_price', 'estimated_days', 'estimated_days_max', 'turnaround_depends', 'min_order_qty'],
+  info: ['name', 'base_price', 'estimated_days', 'estimated_days_max', 'turnaround_depends', 'min_order_qty', 'own_fabric_deduction'],
   spec: ['service_category', 'showcase_category', 'service_leaf_type', 'service_types', 'tiers'],
   chart: ['sizeChart'],
   description: ['description'],

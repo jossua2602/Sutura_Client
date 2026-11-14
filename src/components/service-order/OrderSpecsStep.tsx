@@ -83,7 +83,10 @@ export default function OrderSpecsStep({ o }: Readonly<{ o: ServiceOrderState }>
         rounded
         ownFabricNote={
           <FitTip title="Bringing your own fabric?">
-            Drop off your fabric at the shop <Em>within 2 days after placing your order</Em>. The shop checks it and adjusts the price if needed, so the total shown is an estimate.
+            Drop off your fabric at the shop <Em>within 2 days after placing your order</Em>.{' '}
+            {o.fabricDeductionEach > 0
+              ? <>This shop takes <Em>{peso(o.fabricDeductionEach)} off per piece</Em> for your own fabric; it&apos;s already in the total. The shop may adjust it after checking the fabric.</>
+              : 'The shop checks it and adjusts the price if needed, so the total shown is an estimate.'}
           </FitTip>
         }
       />

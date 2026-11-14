@@ -49,6 +49,8 @@ export interface Job {
   service?: {
     name: string;
     id: number;
+    /** Per-piece amount off when the customer brings their own fabric (null = none set). */
+    own_fabric_deduction?: number | string | null;
     service_type?: string | null;
     service_types?: string[] | null;
     category?: string | null;
