@@ -16,7 +16,7 @@ export function hasSeenLatestWhatsNew(): boolean {
   return localStorage.getItem(STORAGE_KEY) === WHATS_NEW_VERSION;
 }
 
-function dismissWhatsNew() {
+export function dismissWhatsNew() {
   if (globalThis.window === undefined) return;
   localStorage.setItem(STORAGE_KEY, WHATS_NEW_VERSION);
 }

@@ -41,6 +41,7 @@ export default function JobsPageHeader({
 
         <Link
           href="/dashboard/jobs/new"
+          data-tour="jobs-create"
           className="flex items-center gap-1.5 bg-[#8c6b53] hover:bg-[#7b5c45] text-white px-5 py-2 rounded-xl font-bold text-xs transition-colors h-10 shadow-2xs cursor-pointer"
         >
           <Plus size={15} />

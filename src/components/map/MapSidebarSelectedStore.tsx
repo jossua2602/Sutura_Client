@@ -6,6 +6,7 @@ import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
 import { pinName } from '@/components/discovery/pinName';
 import type { SavedLocation } from '@/lib/customerLocation';
+import MapTravelEstimates from './MapTravelEstimates';
 
 interface MapSidebarSelectedStoreProps {
   branch: DiscoveryMapBranch;
@@ -114,6 +115,14 @@ export default function MapSidebarSelectedStore({
           </div>
         </div>
       </div>
+
+      {/* Road distance + travel times (only this shop, only once it's tapped). */}
+      {!isSelectMode && userLocation && (
+        <MapTravelEstimates
+          from={userLocation}
+          to={{ lat: branch.latitude, lng: branch.longitude }}
+        />
+      )}
 
       {/* Action Buttons */}
       <div className="pt-1 space-y-2">

@@ -86,6 +86,10 @@ export interface Job {
   payment_policy?: 'none' | 'full' | 'deposit' | 'custom' | null;
   payment_policy_percent?: number | null;
   customer_job_count?: number;
+  /** Online order: how the customer said they'd be measured (shop = "have the shop measure me"). */
+  measurement_source?: 'own' | 'saved' | 'shop' | null;
+  /** The visit booked to measure a "shop" customer (job detail only); null until booked. */
+  measurement_visit?: { id: number; scheduled_at: string; status: string; appointment_type: string } | null;
   adjustment_count?: number;
   first_adjustment_at?: string | null;
   garment_category?: 'top' | 'bottom' | 'full_set' | 'gown_dress' | 'outerwear' | 'others' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair' | null;

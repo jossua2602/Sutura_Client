@@ -89,7 +89,8 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         activeTab={s.activeTab}
         setActiveTab={s.setActiveTab}
         tabBarRef={s.tabBarRef}
-        onOpenMap={() => s.setIsAllBranchesMapOpen(true)}
+        // Opens the Tailor Locator with this shop picked: road distance, travel times and Directions.
+        onOpenMap={() => router.push(`/map?shop=${encodeURIComponent(s.store?.slug ?? storeId)}`)}
         onImagesSaved={s.fetchStore}
       />
 

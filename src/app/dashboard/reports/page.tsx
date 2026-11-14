@@ -16,10 +16,13 @@ import SubscriptionActivityTimeline, { SubscriptionActivityData } from '@/compon
 import UnclaimedPickupsList from '@/components/reports/UnclaimedPickupsList';
 import JobsOnHoldList from '@/components/reports/JobsOnHoldList';
 import { useBranch } from '@/context/BranchContext';
+import { useToast } from '@/context/ToastContext';
+import { PERIOD_LABELS, reportTables } from '@/components/reports/reportExport';
 
 export default function ReportsPage() {
   const { store, user } = useAuthStore();
   const { selectedBranchId, branches } = useBranch();
+  const toast = useToast();
   const isStoreOwner = user?.roles?.[0]?.name === 'store_owner';
   // Staff reports are Pro, branch comparison Premium (PlanGate on the server).
   // Locked sections show the upgrade panel; don't call the API just to be 403'd.
@@ -47,6 +50,7 @@ export default function ReportsPage() {
       ['Total Revenue', data.total_revenue],
       ["Today's Revenue", data.today_revenue ?? 0],
       ['Outstanding Balance', data.total_outstanding_balance],
+      ['Awaiting Approval', data.pending_approval_balance ?? 0],
       ['Completed Jobs', data.completed_jobs],
       ['Total Jobs', data.total_jobs],
       ['Completion Rate (%)', data.completion_rate ?? 0],
@@ -97,8 +101,35 @@ export default function ReportsPage() {
     link.remove();
   };
 
+  // Its own print page (themed, with the shop's logo): printing this dashboard page
+  // directly came out blank, and its scrolling layout can't print in full anyway.
   const handlePrint = () => {
-    globalThis.print();
+    const branchName = branches.find((b) => b.id === selectedBranchId)?.name;
+    const q = new URLSearchParams({ period, ...(selectedBranchId !== null ? { branch_id: String(selectedBranchId) } : {}), ...(branchName ? { branch: branchName } : {}) });
+    window.open(`/print/reports?${q.toString()}`, '_blank');
+  };
+
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const handleExportExcel = async () => {
+    if (!data || exportingExcel) return;
+    setExportingExcel(true);
+    try {
+      const { downloadBrandedXlsx, shopOrSuturaLogo } = await import('@/lib/brandedExport');
+      const branchName = branches.find((b) => b.id === selectedBranchId)?.name;
+      await downloadBrandedXlsx({
+        fileName: `sutura_report_${period}_${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })}.xlsx`,
+        sheetName: 'Report',
+        org: store?.name ?? 'SUTURA',
+        title: 'Sales & analytics report',
+        subtitle: `${PERIOD_LABELS[period] ?? period}${branchName ? ` · ${branchName}` : ''} · generated ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}`,
+        tables: reportTables(data),
+      }, await shopOrSuturaLogo(store?.id));
+    } catch (err) {
+      console.error('Excel export failed', err);
+      toast.error("The Excel file couldn't be created. Try again, or use Export CSV.");
+    } finally {
+      setExportingExcel(false);
+    }
   };
 
   const getDateRangeForPeriod = (p: string): { startDate: string; endDate: string } => {
@@ -366,6 +397,8 @@ export default function ReportsPage() {
         period={period}
         setPeriod={setPeriod}
         onExportCSV={handleExportCSV}
+        onExportExcel={() => void handleExportExcel()}
+        exportingExcel={exportingExcel}
         onPrint={handlePrint}
       />
 

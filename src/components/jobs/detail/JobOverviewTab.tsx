@@ -32,6 +32,10 @@ interface JobOverviewTabProps {
   isOwnerOrManager: boolean;
   /** Reloads the order after the Due Date & Staff card saves. */
   onScheduleSaved?: () => void | Promise<void>;
+  /** Opens the follow-up form set to a Measurement visit ("have the shop measure me"). */
+  onScheduleMeasurement?: () => void;
+  /** Reloads the order after measurements are recorded or attached. */
+  onMeasurementChanged?: () => void;
 }
 
 export default function JobOverviewTab({
@@ -48,6 +52,8 @@ export default function JobOverviewTab({
   onGoToProduction,
   isOwnerOrManager,
   onScheduleSaved,
+  onScheduleMeasurement,
+  onMeasurementChanged,
 }: JobOverviewTabProps) {
   return (
     <div className="space-y-5">
@@ -83,7 +89,7 @@ export default function JobOverviewTab({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column (8 cols) */}
           <div className="lg:col-span-8 space-y-6">
-            <JobSpecCard job={job} />
+            <JobSpecCard job={job} onScheduleMeasurement={onScheduleMeasurement} onMeasurementChanged={onMeasurementChanged} />
             <JobCutSheetCard job={job} notes={notes} setNotes={setNotes} />
             <JobMeasurementCard job={job} onUseCurrentMeasurement={onUseCurrentMeasurement} />
             <JobRosterCard job={job} onToggleRosterItem={onToggleRosterItem} />

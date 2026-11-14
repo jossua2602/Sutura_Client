@@ -1,11 +1,14 @@
 import React from 'react';
-import { Filter, Download, Printer } from 'lucide-react';
+import { Filter, Download, Printer, FileSpreadsheet, Loader2 } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 
 interface ReportFiltersProps {
   readonly period: string;
   readonly setPeriod: (period: string) => void;
   readonly onExportCSV: () => void;
+  /** Branded .xlsx (logo + SUTURA colours). */
+  readonly onExportExcel?: () => void;
+  readonly exportingExcel?: boolean;
   readonly onPrint: () => void;
 }
 
@@ -13,6 +16,8 @@ export default function ReportFilters({
   period,
   setPeriod,
   onExportCSV,
+  onExportExcel,
+  exportingExcel = false,
   onPrint,
 }: ReportFiltersProps) {
   return (
@@ -42,6 +47,16 @@ export default function ReportFilters({
             >
               <Download size={14} /> <span className="hidden sm:inline">Export</span> CSV
             </button>
+            {onExportExcel && (
+              <button
+                type="button"
+                onClick={onExportExcel}
+                disabled={exportingExcel}
+                className="flex items-center gap-1.5 bg-surface hover:bg-sunken border border-line text-ink-body font-semibold px-4 py-2.5 rounded-lg text-sm transition-colors cursor-pointer min-h-[44px] disabled:opacity-50"
+              >
+                {exportingExcel ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />} Excel
+              </button>
+            )}
             <button
               onClick={onPrint}
               className="flex items-center gap-1.5 bg-taupe hover:bg-taupe-hover text-white font-semibold px-4 py-2.5 rounded-lg text-sm transition-colors cursor-pointer min-h-[44px]"

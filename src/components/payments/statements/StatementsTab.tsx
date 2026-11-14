@@ -34,7 +34,7 @@ export default function StatementsTab() {
       {locked && (
         <div className="flex items-start gap-3 border border-amber-200 bg-amber-50 p-4">
           <Lock size={18} className="text-amber-700 shrink-0 mt-0.5" />
-          <p className="text-sm text-amber-900">Bulk download (ZIP, CSV) is part of the <strong>Premium</strong> plan. You can still download receipts one at a time and print the statement. <Link href="/dashboard/billing" className="font-semibold underline">See plans</Link></p>
+          <p className="text-sm text-amber-900">Bulk download (ZIP, CSV, Excel) is part of the <strong>Premium</strong> plan. You can still download receipts one at a time and print the statement. <Link href="/dashboard/billing" className="font-semibold underline">See plans</Link></p>
         </div>
       )}
 
@@ -46,7 +46,10 @@ export default function StatementsTab() {
           {s.busy === 'range-zip' ? <Loader2 size={16} className="animate-spin" /> : <Package size={16} />} All receipts in period (ZIP)
         </button>
         <button type="button" disabled={locked || !d?.totals.records || s.busy !== null} onClick={() => s.download('range', 'csv')} className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}>
-          {s.busy === 'range-csv' ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />} Statement (CSV / Excel)
+          {s.busy === 'range-csv' ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />} Statement (CSV)
+        </button>
+        <button type="button" disabled={locked || !d?.totals.records || s.busy !== null} onClick={() => void s.downloadExcel()} className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}>
+          {s.busy === 'range-xlsx' ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />} Statement (Excel)
         </button>
         <Link href={s.printHref} target="_blank" className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}><FileText size={16} /> Print / save as PDF</Link>
       </div>

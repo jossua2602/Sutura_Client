@@ -54,6 +54,8 @@ export interface Store {
   phone?: string;
   email?: string;
   logo_path?: string;
+  /** When the shop was created (a new shop opens on the Welcome Guide once). */
+  created_at?: string;
   operating_hours?: Record<string, { is_open: boolean; open: string; close: string }>;
   active_special_hours?: {
     id: number;

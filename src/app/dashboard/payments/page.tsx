@@ -10,6 +10,7 @@ import DigitalReceiptsTab from '@/components/payments/tabs/DigitalReceiptsTab';
 import JobBalancesTab from '@/components/payments/tabs/JobBalancesTab';
 import PaymentMethodsTab from '@/components/payments/PaymentMethodsTab';
 import StatementsTab from '@/components/payments/statements/StatementsTab';
+import CashTab from '@/components/payments/cash/CashTab';
 import RejectReasonModal from '@/components/payments/modals/RejectReasonModal';
 import LogPaymentModal from '@/components/payments/modals/LogPaymentModal';
 
@@ -99,7 +100,16 @@ export default function PaymentQueuePage() {
     });
   }, [filteredBalances, filteredPaidJobs, balanceTier]);
 
-  const totalOutstanding = jobBalances.reduce((sum, j) => sum + (j.balance || 0), 0);
+  // Owed = accepted orders. Orders still waiting for the shop's approval are counted
+  // separately: they may yet be declined, so that money isn't owed yet.
+  const awaitingApproval = jobBalances.filter((j) => j.status === 'pending' && j.balance > 0);
+  const pendingApproval = {
+    amount: awaitingApproval.reduce((sum, j) => sum + (j.balance || 0), 0),
+    count: awaitingApproval.length,
+  };
+  const totalOutstanding = jobBalances
+    .filter((j) => j.status !== 'pending')
+    .reduce((sum, j) => sum + (j.balance || 0), 0);
   const totalPendingReceipts = receipts
     .filter(r => r.payment_status === 'pending')
     .reduce((sum, r) => sum + Number(r.amount || 0), 0);
@@ -123,12 +133,15 @@ export default function PaymentQueuePage() {
         description="Verify GCash receipts and collect job order balances."
       />
 
-      <PaymentStatsCards
-        totalOutstanding={totalOutstanding}
-        totalPendingReceipts={totalPendingReceipts}
-        pendingCount={pendingCount}
-        pickupBalances={pickupBalances}
-      />
+      <div data-tour="payments-stats">
+        <PaymentStatsCards
+          totalOutstanding={totalOutstanding}
+          pendingApproval={pendingApproval}
+          totalPendingReceipts={totalPendingReceipts}
+          pendingCount={pendingCount}
+          pickupBalances={pickupBalances}
+        />
+      </div>
 
       <PaymentTabsNav
         activeTab={activeTab}
@@ -168,6 +181,8 @@ export default function PaymentQueuePage() {
             }}
           />
         )}
+
+        {activeTab === 'cash' && <CashTab />}
 
         {activeTab === 'methods' && <PaymentMethodsTab />}
 

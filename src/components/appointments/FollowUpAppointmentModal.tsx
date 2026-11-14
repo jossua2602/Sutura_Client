@@ -19,6 +19,8 @@ interface FollowUpAppointmentModalProps {
   readonly presetCustomerId?: number;
   readonly presetJobOrderId?: number;
   readonly presetCustomerName?: string;
+  /** Visit type to start on (e.g. 'measurement' from "Schedule visit" on an order). Default fitting. */
+  readonly presetType?: AppointmentType;
   readonly onSubmit: (payload: Record<string, unknown>) => Promise<void>;
   readonly isSubmitting: boolean;
   readonly error: string;
@@ -39,7 +41,7 @@ const defaultForm = {
  */
 export default function FollowUpAppointmentModal({
   isOpen, onClose, customers = [], branches = [], todayStr, minTimeFor,
-  presetCustomerId, presetJobOrderId, presetCustomerName,
+  presetCustomerId, presetJobOrderId, presetCustomerName, presetType,
   onSubmit, isSubmitting, error,
 }: FollowUpAppointmentModalProps) {
   const [formData, setFormData] = useState(defaultForm);
@@ -49,11 +51,12 @@ export default function FollowUpAppointmentModal({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFormData({
       ...defaultForm,
+      appointment_type: presetType ?? defaultForm.appointment_type,
       customer_id: presetCustomerId?.toString() || '',
       scheduled_date: todayStr,
       store_branch_id: branches.length === 1 ? branches[0].id.toString() : '',
     });
-  }, [isOpen, presetCustomerId, todayStr, branches]);
+  }, [isOpen, presetCustomerId, presetType, todayStr, branches]);
 
   const isValid = (presetJobOrderId || !!formData.customer_id)
     && !!formData.appointment_type && (formData.appointment_type !== 'other' || formData.purpose_label.trim() !== '') && !!formData.scheduled_date && !!formData.scheduled_time

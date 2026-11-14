@@ -17,6 +17,8 @@ import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import StaffOnline from '@/components/dashboard/StaffOnline';
 import NewsView from '@/components/dashboard/NewsView';
 import WelcomeView from '@/components/dashboard/WelcomeView';
+import { markWelcomeSeen, shouldAutoOpenWelcome } from '@/components/tour/welcome';
+import { dismissWhatsNew } from '@/components/WhatsNewTour';
 import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import {
   Calendar, Scissors, Users, CreditCard,
@@ -51,6 +53,17 @@ function DashboardPageContent() {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
+
+  // A brand-new shop's owner lands on the Welcome Guide once (instead of the
+  // What's New pop-up, which the guide makes redundant for a new shop).
+  useEffect(() => {
+    if (tabParam || !isStoreOwner || !store?.id) return;
+    if (!shouldAutoOpenWelcome(store.id, store.created_at)) return;
+    markWelcomeSeen(store.id);
+    dismissWhatsNew();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActiveTab('welcome');
+  }, [tabParam, isStoreOwner, store?.id, store?.created_at]);
 
   // Visibility toggle
   const [storeVisible, setStoreVisible] = useState<boolean | null>(null);
@@ -281,9 +294,17 @@ function DashboardPageContent() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">
               Outstanding Balance
             </p>
-            <p className="text-figure text-2xl sm:text-3xl font-bold mt-3 break-words">
-              {peso(data?.total_outstanding_balance)}
-            </p>
+            <div>
+              <p className="text-figure text-2xl sm:text-3xl font-bold mt-3 break-words">
+                {peso(data?.total_outstanding_balance)}
+              </p>
+              {/* Orders not approved yet may still be declined, so their balance isn't counted as owed. */}
+              {(data?.pending_approval_balance ?? 0) > 0 && (
+                <p className="mt-1 text-[11px] font-medium text-white/80">
+                  +{peso(data?.pending_approval_balance)} waiting for approval
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Secondary stats */}

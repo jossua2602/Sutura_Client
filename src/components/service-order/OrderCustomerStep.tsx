@@ -2,10 +2,8 @@
 
 import Link from 'next/link';
 import type { ServiceOrderState } from './useServiceOrder';
-import { ChoiceCard, SectionLabel, StepIntro } from './orderUi';
+import { ChoiceCard, FIELD, SectionLabel, StepIntro } from './orderUi';
 import { formatAddress } from '@/lib/formatAddress';
-
-const TEXT_INPUT = 'w-full h-[48px] bg-canvas border border-line rounded-none px-4 text-base text-ink focus:outline-none focus:border-taupe placeholder:text-ink-faint';
 
 // Step 1 — Customer Information. The walk-in form searches or creates the
 // customer; online, the customer is the signed-in account, so this confirms
@@ -15,7 +13,7 @@ export default function OrderCustomerStep({ o }: Readonly<{ o: ServiceOrderState
     <div className="space-y-7">
       <StepIntro title="Customer Information" text="Who the order is for and how the shop can reach you." />
 
-      <div className="bg-surface border border-line divide-y divide-line">
+      <div className="bg-surface border border-line rounded-lg divide-y divide-line">
         <div className="px-4 py-3">
           <p className="mobile-caption text-ink-muted">Name</p>
           <p className="text-base font-medium text-ink">{o.user?.name}</p>
@@ -44,7 +42,7 @@ export default function OrderCustomerStep({ o }: Readonly<{ o: ServiceOrderState
           value={o.contactPhone}
           onChange={(e) => o.setContactPhone(e.target.value)}
           placeholder="09XX XXX XXXX"
-          className={TEXT_INPUT}
+          className={FIELD}
         />
       </div>
 

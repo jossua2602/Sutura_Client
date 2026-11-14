@@ -29,6 +29,8 @@ interface MapCanvasProps {
   route: ActiveRoute | null;
   routeLoading: boolean;
   onCancelRoute: () => void;
+  /** Opened on one shop (/map?shop=…): keep its view instead of fitting every pin. */
+  keepView?: boolean;
 }
 
 export default function MapCanvas({
@@ -46,6 +48,7 @@ export default function MapCanvas({
   route,
   routeLoading,
   onCancelRoute,
+  keepView = false,
 }: MapCanvasProps) {
   return (
     <div className="absolute inset-0 overflow-hidden z-0">
@@ -66,7 +69,7 @@ export default function MapCanvas({
           selectable={isSelectMode}
           onMoveEnd={isSelectMode ? onMoveEnd : undefined}
           mapRef={mapRef}
-          disableFitBounds={isSelectMode}
+          disableFitBounds={isSelectMode || keepView}
         />
       )}
 

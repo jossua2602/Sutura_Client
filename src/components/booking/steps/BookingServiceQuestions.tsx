@@ -6,14 +6,18 @@ import type { Service } from '../types';
 type Field = NonNullable<Service['custom_fields']>[number];
 
 const INPUT = 'w-full form-input-mobile bg-canvas border border-line rounded-none text-base text-ink font-normal focus:outline-none focus:border-taupe';
+// Online order look (white, rounded); booking keeps the square fields.
+const INPUT_ROUNDED = 'w-full form-input-mobile bg-surface border border-line rounded-lg text-base text-ink font-normal transition-colors focus:outline-none focus:border-taupe focus:ring-2 focus:ring-taupe/15';
 
 // The questions the shop set on this service (Services → Booking Form), answered here
 // so the shop has them before the visit. Saved with the booking's other answers.
-export default function BookingServiceQuestions({ fields, answers, setAnswers }: Readonly<{
+export default function BookingServiceQuestions({ fields, answers, setAnswers, rounded = false }: Readonly<{
   fields: Field[];
   answers: Record<string, string>;
   setAnswers: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  rounded?: boolean;
 }>) {
+  const input = rounded ? INPUT_ROUNDED : INPUT;
   const set = (label: string, v: string) => setAnswers(prev => ({ ...prev, [label]: v }));
   const shown = fields.filter(f => f.label?.trim());
   if (shown.length === 0) return null;
@@ -40,7 +44,7 @@ export default function BookingServiceQuestions({ fields, answers, setAnswers }:
           return (
             <div key={f.id}>
               {label}
-              <select id={id} required={f.required} value={v} onChange={e => set(f.label, e.target.value)} className={INPUT}>
+              <select id={id} required={f.required} value={v} onChange={e => set(f.label, e.target.value)} className={input}>
                 <option value="">Choose…</option>
                 {f.options!.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
@@ -50,7 +54,7 @@ export default function BookingServiceQuestions({ fields, answers, setAnswers }:
         return (
           <div key={f.id}>
             {label}
-            <input id={id} type={f.type === 'number' ? 'number' : 'text'} inputMode={f.type === 'number' ? 'decimal' : undefined} required={f.required} value={v} onChange={e => set(f.label, e.target.value)} className={INPUT} />
+            <input id={id} type={f.type === 'number' ? 'number' : 'text'} inputMode={f.type === 'number' ? 'decimal' : undefined} required={f.required} value={v} onChange={e => set(f.label, e.target.value)} className={input} />
           </div>
         );
       })}

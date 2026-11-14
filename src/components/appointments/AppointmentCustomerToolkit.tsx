@@ -9,6 +9,7 @@ import { getMediaUrl } from '@/lib/media';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import type { Appointment } from './appointmentHelpers';
+import RecordMeasurementModal from '@/components/measurements/RecordMeasurementModal';
 
 interface AppointmentCustomerToolkitProps {
   readonly apt: Appointment;
@@ -33,6 +34,9 @@ export default function AppointmentCustomerToolkit({ apt, onChanged }: Readonly<
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  // A visit booked from an order ("Schedule visit"): record right here and attach to that order.
+  const linkedOrderId = apt.job_order_id ?? apt.job_order?.id ?? null;
+  const [recording, setRecording] = useState(false);
 
   const copy = async (value: string, label: string) => {
     try {
@@ -152,12 +156,31 @@ export default function AppointmentCustomerToolkit({ apt, onChanged }: Readonly<
             <button
               type="button"
               disabled={!apt.customer?.id}
-              onClick={() => router.push(`/dashboard/customers/${apt.customer.id}?tab=measurements`)}
+              onClick={() => (linkedOrderId && store?.id
+                ? setRecording(true)
+                : router.push(`/dashboard/customers/${apt.customer.id}?tab=measurements`))}
               className={`${BTN} w-full`}
             >
               <Ruler size={16} /> Record measurements
             </button>
-            <p className="text-xs text-ink-muted mt-1.5">Opens the customer&apos;s measurement form; saving brings you back here.</p>
+            <p className="text-xs text-ink-muted mt-1.5">
+              {linkedOrderId
+                ? <>Saved to the customer and attached to order <span className="font-semibold text-ink">{apt.job_order?.order_number ?? `#${linkedOrderId}`}</span>.</>
+                : 'Opens the customer’s measurement form; saving brings you back here.'}
+            </p>
+            {linkedOrderId && store?.id && apt.customer?.id && (
+              <RecordMeasurementModal
+                isOpen={recording}
+                onClose={() => setRecording(false)}
+                storeId={store.id}
+                customer={{ id: apt.customer.id, name: apt.customer.name }}
+                jobOrderId={linkedOrderId}
+                onSaved={() => {
+                  toast.success(`Measurements saved and attached to ${apt.job_order?.order_number ?? 'the order'}.`);
+                  onChanged();
+                }}
+              />
+            )}
           </section>
         </>
       )}

@@ -3,11 +3,11 @@
 import { ImagePlus, Loader2, User, Users, X } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { BULK_SIZES, type IndividualMeasurements, type ServiceOrderState } from './useServiceOrder';
-import { ChoiceCard, SectionLabel, StepIntro, measurementCopy } from './orderUi';
+import { ChoiceCard, Em, FIELD, FitTip, SectionLabel, StepIntro, measurementCopy } from './orderUi';
 import { GARMENT_TYPE_OPTIONS } from '@/components/jobs/jobHelpers';
 import { measurementFieldsFor } from '@/lib/garmentMeasurements';
 
-const INPUT = 'w-full h-[48px] bg-canvas border border-line rounded-none px-3 text-base text-ink tabular-nums focus:outline-none focus:border-taupe placeholder:text-ink-faint';
+const INPUT = `${FIELD.replace('px-4', 'px-3')} tabular-nums`;
 
 function ModeCard({ on, onClick, Icon, title, text }: Readonly<{ on: boolean; onClick: () => void; Icon: typeof User; title: string; text: string }>) {
   return (
@@ -16,11 +16,11 @@ function ModeCard({ on, onClick, Icon, title, text }: Readonly<{ on: boolean; on
       role="radio"
       aria-checked={on}
       onClick={onClick}
-      className={`p-3.5 border text-left transition-colors flex items-start gap-3 ${
-        on ? 'border-taupe bg-taupe/5 ring-2 ring-taupe/20' : 'border-line bg-surface hover:border-taupe/40'
+      className={`p-3.5 rounded-lg border text-left transition-colors flex items-start gap-3 ${
+        on ? 'border-taupe bg-taupe/10 shadow-sm' : 'border-line bg-surface hover:border-taupe/40'
       }`}
     >
-      <span className={`w-9 h-9 flex items-center justify-center shrink-0 ${on ? 'bg-taupe text-white' : 'bg-canvas text-ink-muted'}`}>
+      <span className={`w-9 h-9 rounded-md flex items-center justify-center shrink-0 ${on ? 'bg-taupe text-white' : 'bg-canvas text-ink-muted'}`}>
         <Icon size={18} />
       </span>
       <span>
@@ -75,7 +75,7 @@ export default function OrderMeasurementsStep({ o }: Readonly<{ o: ServiceOrderS
       )}
 
       {o.orderMode === 'individual' && !o.measurementsNeeded && (
-        <p className="text-sm text-ink-body bg-surface border border-line px-4 py-3">{measurementCopy(o.requirements)}</p>
+        <p className="text-sm text-ink-body bg-surface border border-line rounded-lg px-4 py-3">{measurementCopy(o.requirements)}</p>
       )}
 
       {o.orderMode === 'individual' && o.measurementsNeeded && (
@@ -110,10 +110,10 @@ export default function OrderMeasurementsStep({ o }: Readonly<{ o: ServiceOrderS
           )}
 
           {o.measurementSource === 'own' && (
-            <div className="space-y-4 bg-surface border border-line p-4">
+            <div className="space-y-4 bg-surface border border-line rounded-lg p-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-ink">Body measurements</p>
-                <div className="flex border border-line" role="radiogroup" aria-label="Unit">
+                <div className="flex overflow-hidden rounded-lg border border-line" role="radiogroup" aria-label="Unit">
                   {(['in', 'cm'] as const).map((u) => (
                     <button
                       key={u}
@@ -128,6 +128,13 @@ export default function OrderMeasurementsStep({ o }: Readonly<{ o: ServiceOrderS
                   ))}
                 </div>
               </div>
+              <FitTip title="Measurement Tip">
+                {o.measurements.unit === 'cm' ? (
+                  <>To ensure a comfortable fit, <Em>add 7.5 cm</Em> (3 inches) to your actual body measurements. (Example: If your chest measures 97 cm, please enter 104.5.)</>
+                ) : (
+                  <>To ensure a comfortable fit, <Em>add 3 inches</Em> to your actual body measurements. (Example: If your chest measures 38 inches, please enter 41.)</>
+                )}
+              </FitTip>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {fields.map((f) => (
                   <div key={f.key}>
@@ -152,7 +159,7 @@ export default function OrderMeasurementsStep({ o }: Readonly<{ o: ServiceOrderS
                 <p className="mobile-caption font-semibold text-ink-body">Measurement card photo <span className="text-ink-faint font-normal">(optional)</span></p>
                 <div className="flex flex-wrap gap-2">
                   {o.sheets.map((url) => (
-                    <div key={url} className="relative w-20 h-20 border border-line overflow-hidden bg-sunken">
+                    <div key={url} className="relative w-20 h-20 rounded-lg border border-line overflow-hidden bg-sunken">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={getMediaUrl(url)} alt="Measurement card" className="w-full h-full object-cover" />
                       <button type="button" onClick={() => o.setSheets((p) => p.filter((u) => u !== url))} aria-label="Remove photo" className="absolute top-1 right-1 w-6 h-6 rounded-full bg-ink/75 text-white flex items-center justify-center">
@@ -161,7 +168,7 @@ export default function OrderMeasurementsStep({ o }: Readonly<{ o: ServiceOrderS
                     </div>
                   ))}
                   {o.sheets.length < o.maxPhotos && (
-                    <label className="w-20 h-20 border-2 border-dashed border-line flex flex-col items-center justify-center gap-1 text-ink-faint cursor-pointer hover:border-taupe/50 hover:text-taupe transition-colors focus-within:border-taupe">
+                    <label className="w-20 h-20 rounded-lg border-2 border-dashed border-line flex flex-col items-center justify-center gap-1 text-ink-faint cursor-pointer hover:border-taupe/50 hover:text-taupe transition-colors focus-within:border-taupe">
                       {o.uploadingSheet ? <Loader2 size={18} className="animate-spin" /> : <ImagePlus size={18} />}
                       <span className="text-[11px] font-medium">{o.uploadingSheet ? 'Uploading' : 'Add'}</span>
                       <input
@@ -203,6 +210,9 @@ export default function OrderMeasurementsStep({ o }: Readonly<{ o: ServiceOrderS
           </div>
           <div className="space-y-2.5">
             <SectionLabel as="p">Pieces per size</SectionLabel>
+            <FitTip title="Sizing Guide">
+              For the best fit, please order <Em>one size larger</Em> than your usual size. (Example: If you usually wear Medium (M), choose Large (L).)
+            </FitTip>
             <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
               {BULK_SIZES.map((s) => (
                 <div key={s}>

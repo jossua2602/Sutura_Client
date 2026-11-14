@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AlertTriangle, ArrowDown, ArrowUp, Download, Loader2, Settings } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, Download, FileSpreadsheet, Loader2, Settings } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import SearchInput from '@/components/shared/SearchInput';
 import Badge from '@/components/shared/Badge';
@@ -114,6 +114,37 @@ function PaymentsPageContent() {
     }
   };
 
+  // Branded .xlsx (SUTURA logo and colours) from the same CSV export, so it holds exactly the same rows.
+  const [exportingXlsx, setExportingXlsx] = useState(false);
+  const exportExcel = async () => {
+    setExportingXlsx(true);
+    try {
+      const clean = Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== '' && v !== undefined));
+      const res = await adminApi.get('/admin/payments/export', { params: clean, responseType: 'blob' });
+      const { parseCsv, downloadBrandedXlsx, suturaLogo } = await import('@/lib/brandedExport');
+      const [columns = [], ...body] = parseCsv(await (res.data as Blob).text());
+      const rows = body.filter((l) => l.some((v) => v !== ''));
+      const money = ['Amount due', 'Amount sent', 'Refunded'].map((c) => columns.indexOf(c)).filter((i) => i >= 0);
+      const sentCol = columns.indexOf('Amount sent');
+      const statusCol = columns.indexOf('Status');
+      const paidTotal = rows.reduce((sum, r) => sum + (r[statusCol] === 'paid' ? Number(r[sentCol]) || 0 : 0), 0);
+      const statusLabel = STATUSES.find((x) => x.value === status)?.label ?? 'All';
+      await downloadBrandedXlsx({
+        fileName: `sutura-payments-${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })}.xlsx`,
+        sheetName: 'Payments',
+        org: 'SUTURA',
+        title: 'Plan payments',
+        subtitle: `${statusLabel}${range.from || range.to ? ` · ${range.from || '…'} to ${range.to || '…'}` : ''} · generated ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}`,
+        meta: [['Records', rows.length], ['Total paid (amount sent)', paidTotal]],
+        tables: [{ columns, rows, money }],
+      }, await suturaLogo());
+    } catch (err) {
+      toast.error(getErrorMessage(err, "The Excel file couldn't be created. Try again, or use Export CSV."));
+    } finally {
+      setExportingXlsx(false);
+    }
+  };
+
   const s = stats;
   const skeleton = <span className="inline-block h-8 w-20 animate-pulse bg-sunken align-middle" aria-hidden="true" />;
   const hasFilters = Boolean(query || planId || type || range.from || range.to);
@@ -188,6 +219,9 @@ function PaymentsPageContent() {
           </div>
           <button type="button" onClick={exportCsv} disabled={exporting} className="inline-flex min-h-11 items-center justify-center gap-2 border border-line-strong bg-surface px-4 text-sm text-ink hover:bg-sunken cursor-pointer disabled:opacity-50 lg:ml-auto">
             {exporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} aria-hidden="true" />} Export CSV
+          </button>
+          <button type="button" onClick={() => void exportExcel()} disabled={exportingXlsx} className="inline-flex min-h-11 items-center justify-center gap-2 border border-line-strong bg-surface px-4 text-sm text-ink hover:bg-sunken cursor-pointer disabled:opacity-50">
+            {exportingXlsx ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} aria-hidden="true" />} Export Excel
           </button>
         </div>
       </div>

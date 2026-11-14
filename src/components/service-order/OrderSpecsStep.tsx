@@ -7,9 +7,7 @@ import BookingServiceQuestions from '@/components/booking/steps/BookingServiceQu
 import BookingMaterialSelector from '@/components/booking/steps/schedule/BookingMaterialSelector';
 import type { Service as BookingService } from '@/components/booking/types';
 import type { ServiceOrderState } from './useServiceOrder';
-import { ChoiceCard, SectionLabel, StepIntro, peso } from './orderUi';
-
-const TEXT_INPUT = 'w-full h-[48px] bg-canvas border border-line rounded-none px-4 text-base text-ink focus:outline-none focus:border-taupe placeholder:text-ink-faint';
+import { ChoiceCard, Em, FIELD, FitTip, SectionLabel, StepIntro, peso } from './orderUi';
 
 // Step 3 — Order Specifications, like the walk-in form's: the service and
 // option, size, fabric source, the shop's questions, references and notes.
@@ -21,8 +19,8 @@ export default function OrderSpecsStep({ o }: Readonly<{ o: ServiceOrderState }>
     <div className="space-y-7">
       <StepIntro title="Order Specifications" text="Style, fabric and anything the shop should follow." />
 
-      <div className="flex items-center gap-3.5 bg-surface border border-line p-3">
-        <div className="relative w-16 h-16 shrink-0 bg-sunken overflow-hidden">
+      <div className="flex items-center gap-3.5 bg-surface border border-line rounded-lg p-3">
+        <div className="relative w-16 h-16 shrink-0 rounded-md bg-sunken overflow-hidden">
           {service.image_url && <Image src={getMediaUrl(service.image_url)} alt="" fill sizes="64px" className="object-cover" />}
         </div>
         <div className="min-w-0">
@@ -48,34 +46,32 @@ export default function OrderSpecsStep({ o }: Readonly<{ o: ServiceOrderState }>
         </fieldset>
       )}
 
-      {o.orderMode === 'individual' && (
+      {/* Only when the shop set sizes for this service. No free-text size box: the
+          measurements step already says how the customer will be sized. */}
+      {o.orderMode === 'individual' && o.sizes.length > 0 && (
         <div className="space-y-2.5">
-          <SectionLabel htmlFor={o.sizes.length > 0 ? undefined : 'order-size'}>
+          <SectionLabel>
             Standard size <span className="text-ink-faint font-normal">(Optional)</span>
           </SectionLabel>
-          {o.sizes.length > 0 ? (
-            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Standard size">
-              {o.sizes.map((s) => {
-                const on = o.size === s;
-                return (
-                  <button
-                    key={s}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    onClick={() => o.setSize(on ? '' : s)}
-                    className={`min-w-12 h-11 px-3.5 border text-sm font-semibold transition-colors ${
-                      on ? 'border-taupe bg-taupe text-white' : 'border-line bg-surface text-ink-body hover:border-taupe/50'
-                    }`}
-                  >
-                    {s}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <input id="order-size" type="text" maxLength={50} value={o.size} onChange={(e) => o.setSize(e.target.value)} placeholder="e.g. Medium" className={TEXT_INPUT} />
-          )}
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Standard size">
+            {o.sizes.map((s) => {
+              const on = o.size === s;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => o.setSize(on ? '' : s)}
+                  className={`min-w-12 h-11 px-3.5 rounded-lg border text-sm font-semibold transition-colors ${
+                    on ? 'border-taupe bg-taupe text-white' : 'border-line bg-surface text-ink-body hover:border-taupe/50'
+                  }`}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -84,12 +80,18 @@ export default function OrderSpecsStep({ o }: Readonly<{ o: ServiceOrderState }>
         setMaterialSource={o.setMaterialSource}
         materialDescription={o.materialDescription}
         setMaterialDescription={o.setMaterialDescription}
+        rounded
+        ownFabricNote={
+          <FitTip title="Bringing your own fabric?">
+            Drop off your fabric at the shop <Em>within 2 days after placing your order</Em>. The shop checks it and adjusts the price if needed, so the total shown is an estimate.
+          </FitTip>
+        }
       />
 
       {fields.some((f) => f.label?.trim()) && (
         <div className="space-y-2.5">
           <SectionLabel as="p">A few questions from the shop</SectionLabel>
-          <BookingServiceQuestions fields={fields} answers={o.answers} setAnswers={o.setAnswers} />
+          <BookingServiceQuestions fields={fields} answers={o.answers} setAnswers={o.setAnswers} rounded />
         </div>
       )}
 
@@ -103,7 +105,7 @@ export default function OrderSpecsStep({ o }: Readonly<{ o: ServiceOrderState }>
         )}
         <div className="flex flex-wrap gap-2">
           {o.photos.map((url) => (
-            <div key={url} className="relative w-20 h-20 border border-line overflow-hidden bg-sunken">
+            <div key={url} className="relative w-20 h-20 rounded-lg border border-line overflow-hidden bg-sunken">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={getMediaUrl(url)} alt="Reference" className="w-full h-full object-cover" />
               <button type="button" onClick={() => o.setPhotos((p) => p.filter((u) => u !== url))} aria-label="Remove photo" className="absolute top-1 right-1 w-6 h-6 rounded-full bg-ink/75 text-white flex items-center justify-center">
@@ -112,7 +114,7 @@ export default function OrderSpecsStep({ o }: Readonly<{ o: ServiceOrderState }>
             </div>
           ))}
           {o.photos.length < o.maxPhotos && (
-            <label className="w-20 h-20 border-2 border-dashed border-line flex flex-col items-center justify-center gap-1 text-ink-faint cursor-pointer hover:border-taupe/50 hover:text-taupe transition-colors focus-within:border-taupe">
+            <label className="w-20 h-20 rounded-lg border-2 border-dashed border-line flex flex-col items-center justify-center gap-1 text-ink-faint cursor-pointer hover:border-taupe/50 hover:text-taupe transition-colors focus-within:border-taupe">
               {o.uploading ? <Loader2 size={18} className="animate-spin" /> : <ImagePlus size={18} />}
               <span className="text-[11px] font-medium">{o.uploading ? 'Uploading' : 'Add'}</span>
               <input
@@ -135,7 +137,7 @@ export default function OrderSpecsStep({ o }: Readonly<{ o: ServiceOrderState }>
         <SectionLabel htmlFor="order-link">
           Reference link <span className="text-ink-faint font-normal">(Optional)</span>
         </SectionLabel>
-        <input id="order-link" type="url" inputMode="url" maxLength={500} value={o.referenceLink} onChange={(e) => o.setReferenceLink(e.target.value)} placeholder="https://" className={TEXT_INPUT} />
+        <input id="order-link" type="url" inputMode="url" maxLength={500} value={o.referenceLink} onChange={(e) => o.setReferenceLink(e.target.value)} placeholder="https://" className={FIELD} />
       </div>
 
       <div className="space-y-2.5">
@@ -149,7 +151,7 @@ export default function OrderSpecsStep({ o }: Readonly<{ o: ServiceOrderState }>
           value={o.notes}
           onChange={(e) => o.setNotes(e.target.value)}
           placeholder="Name tag spelling, patches, sleeve length…"
-          className="w-full resize-none bg-canvas border border-line rounded-none px-4 py-3 text-base text-ink focus:outline-none focus:border-taupe placeholder:text-ink-faint"
+          className={`${FIELD} h-auto resize-none py-3`}
         />
       </div>
     </div>

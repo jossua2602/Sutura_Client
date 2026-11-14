@@ -58,7 +58,9 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
     {
       label: 'Outstanding Balance',
       value: `₱${Number(data?.total_outstanding_balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-      sub: 'Unpaid from clients',
+      sub: (data?.pending_approval_balance ?? 0) > 0
+        ? `Accepted orders · +₱${Number(data?.pending_approval_balance).toLocaleString('en-PH', { minimumFractionDigits: 2 })} awaiting approval`
+        : 'Unpaid on accepted orders',
       icon: <Wallet size={20} />,
       color: TONE.neutral,
     },

@@ -270,6 +270,8 @@ export function useServiceOrder(storeId: string) {
         store_branch_id: branchId ?? undefined,
         order_mode: orderMode,
         measurement_id: individual && measurementSource === 'saved' ? measurementId ?? undefined : undefined,
+        // Saved with the order so the shop sees "measure me at the shop" and books the visit.
+        measurement_source: individual && measurementsNeeded ? measurementSource : undefined,
         garment_category: garmentType || undefined,
         individual_measurements: individual && measurementSource === 'own' && hasOwnMeasurement ? pickMeasurements(measurements, garmentType) : undefined,
         size_breakdown: individual ? undefined : sizeBreakdown,

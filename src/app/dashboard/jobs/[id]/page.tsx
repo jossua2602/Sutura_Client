@@ -25,6 +25,8 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
   const id = unwrappedParams.id;
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  // "Schedule visit" on a measure-at-shop order opens the same form set to Measurement.
+  const [followUpType, setFollowUpType] = useState<'measurement' | undefined>(undefined);
   const [followUpBranches, setFollowUpBranches] = useState<BranchData[]>([]);
   const [followUpSubmitting, setFollowUpSubmitting] = useState(false);
   const [followUpError, setFollowUpError] = useState('');
@@ -105,6 +107,8 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
       await api.post(`/stores/${store.id}/appointments/follow-up`, payload);
       toast.success('Follow-up visit scheduled — the customer has been notified.');
       setShowFollowUpModal(false);
+      // Picks up the new visit (the measure-at-shop callout shows its date).
+      void refreshJob();
     } catch (err: unknown) {
       setFollowUpError(getErrorMessage(err, 'Failed to schedule follow-up visit.'));
     } finally {
@@ -141,7 +145,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
           onBack={() => router.back()}
           onResetChanges={handleResetChanges}
           onOpenMessageModal={() => setShowMessageModal(true)}
-          onOpenFollowUpModal={() => { setFollowUpError(''); setShowFollowUpModal(true); }}
+          onOpenFollowUpModal={() => { setFollowUpError(''); setFollowUpType(undefined); setShowFollowUpModal(true); }}
           onPrint={() => window.print()}
           onOpenDeleteModal={() => setIsDeleteModalOpen(true)}
           onUpdate={handleUpdate}
@@ -170,6 +174,8 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             onGoToProduction={() => setActiveTab('production')}
             isOwnerOrManager={isOwnerOrManager}
             onScheduleSaved={refreshJob}
+            onScheduleMeasurement={() => { setFollowUpError(''); setFollowUpType('measurement'); setShowFollowUpModal(true); }}
+            onMeasurementChanged={() => void refreshJob()}
           />
         )}
 
@@ -242,6 +248,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
           presetJobOrderId={job.id}
           presetCustomerId={job.customer?.id}
           presetCustomerName={job.customer?.name}
+          presetType={followUpType}
           onSubmit={handleCreateFollowUp}
           isSubmitting={followUpSubmitting}
           error={followUpError}

@@ -13,10 +13,14 @@ import api from '@/lib/axios';
  * otherwise silently stalls any page that fetches by store.id.
  */
 export function usePrintAuthGuard() {
-  const { user, store, token, isAuthenticated, setAuth, logout } = useAuthStore();
+  const { user, store, token, isAuthenticated, hydrated, setAuth, logout } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
+    // AuthHydrator (root layout) restores the tab's login in an effect that runs *after*
+    // this page's effects. Without waiting, a signed-in tab looked signed out on the first
+    // render and got sent to /login (which then bounced to the dashboard), so print never showed.
+    if (!hydrated) return;
     if (!isAuthenticated) {
       router.push('/login');
     } else if (!store && token) {
@@ -36,5 +40,5 @@ export function usePrintAuthGuard() {
           router.push('/login');
         });
     }
-  }, [isAuthenticated, user, store, token, router, setAuth, logout]);
+  }, [hydrated, isAuthenticated, user, store, token, router, setAuth, logout]);
 }

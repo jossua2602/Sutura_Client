@@ -5,12 +5,17 @@ import Link from 'next/link';
 import { Job } from '../jobTypes';
 import { GARMENT_CATEGORY_LABELS } from '../jobHelpers';
 import { MEASUREMENT_LABELS } from '@/lib/garmentMeasurements';
+import MeasureAtShopCallout from './MeasureAtShopCallout';
 
 interface JobSpecCardProps {
   job: Job;
+  /** Opens the follow-up form set to a Measurement visit. */
+  onScheduleMeasurement?: () => void;
+  /** Reloads the order after measurements are recorded or attached. */
+  onMeasurementChanged?: () => void;
 }
 
-export default function JobSpecCard({ job }: JobSpecCardProps) {
+export default function JobSpecCard({ job, onScheduleMeasurement, onMeasurementChanged }: JobSpecCardProps) {
   const resolvedCategory =
     job.service?.category ||
     (job.service?.categories && job.service.categories.length > 0 ? job.service.categories.join(', ') : null) ||
@@ -48,6 +53,8 @@ export default function JobSpecCard({ job }: JobSpecCardProps) {
           </Link>
         )}
       </div>
+
+      <MeasureAtShopCallout job={job} onSchedule={onScheduleMeasurement} onChanged={onMeasurementChanged} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 text-sm py-1">
         <div className="space-y-1">

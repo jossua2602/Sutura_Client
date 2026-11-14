@@ -70,8 +70,12 @@ export default function MapShopCard({ branch, active, onSelect, onHover }: {
         </span>
         <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-body">
           {branch.distanceKm != null && (
-            <span className="inline-flex items-center gap-1 font-semibold text-ink tabular-nums">
-              <MapPin size={12} className="text-taupe" aria-hidden="true" /> {fmtKm(branch.distanceKm)}
+            // Straight line, so it can read shorter than the road route in
+            // Directions; tapping the shop shows the road distance.
+            <span className="inline-flex items-center gap-1 tabular-nums">
+              <MapPin size={12} className="text-taupe" aria-hidden="true" />
+              <span className="font-semibold text-ink">{fmtKm(branch.distanceKm)}</span>
+              <span className="text-ink-faint">straight line</span>
             </span>
           )}
           {specialties.map((s, i) => (

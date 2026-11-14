@@ -1,8 +1,9 @@
 'use client';
 
-import { Minus, Plus } from 'lucide-react';
+import { Minus, Plus, Zap } from 'lucide-react';
+import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import type { ServiceOrderState } from './useServiceOrder';
-import { ChoiceCard, SectionLabel, StepIntro, paymentCopy, peso } from './orderUi';
+import { ChoiceCard, FIELD, SectionLabel, StepIntro, paymentCopy, peso } from './orderUi';
 import OrderGcashPayment from './OrderGcashPayment';
 
 function Line({ label, value, strong }: Readonly<{ label: string; value: string; strong?: boolean }>) {
@@ -20,6 +21,14 @@ export default function OrderInvoiceStep({ o }: Readonly<{ o: ServiceOrderState 
   const tomorrow = new Date(Date.now() + 86_400_000).toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
   const fullOnly = o.policy === 'full';
 
+  // The shop's own turnaround for this service ("It depends" = none set).
+  const minDays = Number(o.service?.estimated_days) || 0;
+  const usualDays = minDays >= 1 ? { min: minDays, max: o.service?.estimated_days_max ?? null } : null;
+  // Picked date closer than the fastest usual turnaround → suggest rush (unless already asked).
+  const todayManila = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+  const daysUntil = o.neededBy ? Math.round((Date.parse(o.neededBy) - Date.parse(todayManila)) / 86_400_000) : null;
+  const tooSoon = usualDays !== null && daysUntil !== null && daysUntil < usualDays.min && !o.rushRequested;
+
   return (
     <div className="space-y-7">
       <StepIntro title="Invoice & Payment" text="Quantity, schedule and how you plan to pay." />
@@ -27,7 +36,7 @@ export default function OrderInvoiceStep({ o }: Readonly<{ o: ServiceOrderState 
       {o.orderMode === 'individual' ? (
         <div className="space-y-2.5">
           <SectionLabel htmlFor="order-qty">Quantity</SectionLabel>
-          <div className="flex items-stretch w-fit border border-line bg-surface">
+          <div className="flex items-stretch w-fit overflow-hidden rounded-lg border border-line bg-surface">
             <button type="button" aria-label="Fewer" disabled={o.quantity <= o.minQty} onClick={() => o.setQuantity((q) => Math.max(o.minQty, q - 1))} className="w-12 h-12 flex items-center justify-center text-ink hover:bg-sunken/50 disabled:text-ink-faint disabled:hover:bg-transparent transition-colors">
               <Minus size={18} />
             </button>
@@ -52,7 +61,7 @@ export default function OrderInvoiceStep({ o }: Readonly<{ o: ServiceOrderState 
           {o.minQty > 1 && <p className="mobile-caption text-ink-muted">This shop takes orders of {o.minQty} pieces or more.</p>}
         </div>
       ) : (
-        <div className="flex items-center justify-between bg-surface border border-line px-4 py-3">
+        <div className="flex items-center justify-between bg-surface border border-line rounded-lg px-4 py-3">
           <span className="text-sm text-ink-muted">Quantity (from your size breakdown)</span>
           <span className="text-base font-semibold text-ink tabular-nums">{o.pieces} pcs</span>
         </div>
@@ -60,7 +69,7 @@ export default function OrderInvoiceStep({ o }: Readonly<{ o: ServiceOrderState 
 
       <div className="space-y-2.5">
         <SectionLabel htmlFor="order-needed-by">
-          Needed by <span className="text-ink-faint font-normal">(Optional)</span>
+          When do you need it? <span className="text-ink-faint font-normal">(Optional)</span>
         </SectionLabel>
         <p className="mobile-caption text-ink-muted -mt-1">The shop confirms the actual finish date when it accepts the order.</p>
         <input
@@ -69,11 +78,23 @@ export default function OrderInvoiceStep({ o }: Readonly<{ o: ServiceOrderState 
           min={tomorrow}
           value={o.neededBy}
           onChange={(e) => o.setNeededBy(e.target.value)}
-          className="w-full sm:w-64 h-[48px] bg-canvas border border-line rounded-none px-4 text-base text-ink focus:outline-none focus:border-taupe"
+          aria-describedby={usualDays ? 'order-usual-days' : undefined}
+          className={`${FIELD} sm:w-64`}
         />
+        {usualDays && (
+          <p id="order-usual-days" className="text-sm text-ink-body">
+            This service usually takes <strong className="font-semibold text-ink">{formatServiceTurnaround(usualDays.min, usualDays.max)}</strong>.
+          </p>
+        )}
+        {tooSoon && (
+          <p role="status" className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm leading-snug text-amber-900">
+            <Zap size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span>That&apos;s sooner than this service usually takes. Consider <strong className="font-semibold">requesting rush production</strong> below.</span>
+          </p>
+        )}
       </div>
 
-      <label className="flex items-start gap-3 bg-surface border border-line p-3.5 cursor-pointer has-[:checked]:border-taupe has-[:checked]:bg-taupe/5">
+      <label className="flex items-start gap-3 bg-surface border border-line rounded-lg p-3.5 cursor-pointer has-[:checked]:border-taupe has-[:checked]:bg-taupe/10">
         <input type="checkbox" checked={o.rushRequested} onChange={(e) => o.setRushRequested(e.target.checked)} className="mt-0.5 w-5 h-5 accent-[#6B5346] shrink-0" />
         <span>
           <span className="block text-sm font-semibold text-ink">Request rush production</span>
@@ -98,7 +119,7 @@ export default function OrderInvoiceStep({ o }: Readonly<{ o: ServiceOrderState 
 
       <OrderGcashPayment o={o} />
 
-      <section className="bg-surface border-2 border-ink px-4 py-3">
+      <section className="bg-surface border-2 border-ink rounded-lg px-4 py-3">
         <h2 className="mobile-h4 text-ink pb-1">Order financial summary</h2>
         <dl className="divide-y divide-line">
           <Line label="Item rate" value={o.unitPrice > 0 ? peso(o.unitPrice) : 'Quoted by shop'} />

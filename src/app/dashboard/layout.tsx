@@ -22,6 +22,7 @@ import HeaderBreadcrumbs from '@/components/shell/HeaderBreadcrumbs';
 import StoreApplicationGate from '@/components/dashboard/StoreApplicationGate';
 import ChangePasswordGate from '@/components/dashboard/ChangePasswordGate';
 import { TrialBanner, useLatestSubscription } from '@/components/billing/TrialNotice';
+import ProductTourRunner from '@/components/tour/ProductTourRunner';
 
 const SIDEBAR_KEY = 'sutura.sidebar';
 
@@ -365,6 +366,8 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
             {children}
           </div>
         </main>
+        {/* Product tours from the Welcome Guide's "Configure now" (?tour=…). */}
+        <React.Suspense fallback={null}><ProductTourRunner /></React.Suspense>
       </div>
 
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} isStoreOwner={isStoreOwner} />

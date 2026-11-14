@@ -5,6 +5,8 @@ import { CreditCard, Receipt, Store } from 'lucide-react';
 
 interface PaymentStatsCardsProps {
   totalOutstanding: number;
+  /** Balances on orders still waiting for the shop's approval (not owed yet). */
+  pendingApproval?: { amount: number; count: number };
   totalPendingReceipts: number;
   pendingCount: number;
   pickupBalances: number;
@@ -12,6 +14,7 @@ interface PaymentStatsCardsProps {
 
 export default function PaymentStatsCards({
   totalOutstanding,
+  pendingApproval,
   totalPendingReceipts,
   pendingCount,
   pickupBalances,
@@ -30,7 +33,12 @@ export default function PaymentStatsCards({
           <p className="text-2xl font-black tabular-nums tracking-tight">
             ₱{totalOutstanding.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
           </p>
-          <p className="text-[11px] text-white/70 mt-0.5">Uncollected across all active orders</p>
+          <p className="text-[11px] text-white/70 mt-0.5">Still owed on accepted orders</p>
+          {pendingApproval && pendingApproval.amount > 0 && (
+            <p className="mt-2 inline-flex rounded-md bg-white/15 px-2 py-1 text-[11px] font-semibold text-white">
+              +₱{pendingApproval.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })} waiting for your approval ({pendingApproval.count} {pendingApproval.count === 1 ? 'order' : 'orders'})
+            </p>
+          )}
         </div>
       </div>
 

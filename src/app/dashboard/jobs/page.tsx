@@ -142,6 +142,7 @@ function JobOrdersPageContent() {
 
       {/* Main White Surface Card Panel (Enclosing Toolbar + Kanban Board) */}
       <div className="bg-surface/60 border border-line rounded-3xl overflow-hidden shadow-2xs flex flex-col flex-1">
+        <div data-tour="jobs-toolbar">
         <JobsPageToolbar
           tab={tab}
           setTab={setTab}
@@ -165,8 +166,9 @@ function JobOrdersPageContent() {
           onOpenSettings={() => setSettingsModalOpen(true)}
           onRefresh={() => fetchJobs({ silent: true })}
         />
+        </div>
 
-        <div className="p-3 sm:p-5 flex-1 overflow-hidden">
+        <div data-tour="jobs-board" className="p-3 sm:p-5 flex-1 overflow-hidden">
           {loading ? (
             <KanbanSkeleton columns={4} />
           ) : (

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause, Star, Store, Eye, Sparkles, Shirt, Zap, Clock, type LucideIcon } from 'lucide-react';
-import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, requiresDownpayment, ON_HOLD_COLUMN, PRODUCTION_COLUMNS, normalizeJobStatus, GARMENT_CATEGORY_LABELS } from './jobHelpers';
+import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause, Star, Store, Eye, Sparkles, Shirt, Zap, Clock, Ruler, type LucideIcon } from 'lucide-react';
+import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, requiresDownpayment, ON_HOLD_COLUMN, PRODUCTION_COLUMNS, normalizeJobStatus, GARMENT_CATEGORY_LABELS, needsMeasuring } from './jobHelpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import CancellationReasonModal from './CancellationReasonModal';
 import HoldReasonModal from './HoldReasonModal';
@@ -78,6 +78,18 @@ const SUKI_TAG_CONFIG: Record<string, { label: string; cls: string; Icon: Lucide
 // order. Full history for a specific customer/date range is what the
 // Custom Jobs search bar is for; this is just about the live board view.
 const COMPLETED_COLLAPSE_AT = 5;
+
+/** The customer asked the shop to measure them and nothing is recorded yet. */
+function NeedsMeasuringTag() {
+  return (
+    <span
+      title="The customer asked to be measured at the shop. Open the order to schedule the visit."
+      className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0"
+    >
+      <Ruler size={10} aria-hidden="true" /> Needs measuring
+    </span>
+  );
+}
 
 export default function JobKanbanBoard({
   groupedJobs,
@@ -319,6 +331,7 @@ export default function JobKanbanBoard({
                               Rush
                             </span>
                           )}
+                          {needsMeasuring(job) && <NeedsMeasuringTag />}
                           {job.design_origin && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-sunken font-medium uppercase text-ink-muted">
                               {job.design_origin}
@@ -517,6 +530,7 @@ export default function JobKanbanBoard({
                           Rush
                         </span>
                       )}
+                      {needsMeasuring(job) && <NeedsMeasuringTag />}
                       {job.design_origin && (
                         <span className="text-[10px] px-2 py-0.5 rounded bg-sunken font-medium uppercase text-ink-muted border border-line/60 shrink-0">
                           {job.design_origin}

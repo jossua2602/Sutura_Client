@@ -1,7 +1,29 @@
 'use client';
 
 import React from 'react';
+import { Info } from 'lucide-react';
 import type { PublicService } from '@/components/store-storefront/types';
+
+/** Text field look for every step of the online order: white, rounded, light border. */
+export const FIELD = 'w-full h-12 rounded-lg border border-line bg-surface px-4 text-base text-ink placeholder:text-ink-faint transition-colors focus:outline-none focus:border-taupe focus:ring-2 focus:ring-taupe/15';
+
+/** Light-blue tip box (Sizing Guide, Measurement Tip, own fabric) shown above the fields it's about. */
+export function FitTip({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
+  return (
+    <div role="note" className="flex items-center gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+      <Info size={22} className="shrink-0 text-blue-800" aria-hidden="true" />
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-ink">{title}</p>
+        <p className="mt-0.5 text-sm leading-snug text-ink-body">{children}</p>
+      </div>
+    </div>
+  );
+}
+
+/** The highlighted phrase inside a FitTip. */
+export function Em({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <strong className="font-semibold text-blue-800">{children}</strong>;
+}
 
 export function peso(amount: number): string {
   return `₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
@@ -66,8 +88,8 @@ export function ChoiceCard({
       role="radio"
       aria-checked={selected}
       onClick={onSelect}
-      className={`min-h-[52px] w-full p-3.5 rounded-none border text-left transition-colors cursor-pointer flex items-center gap-3 ${
-        selected ? 'border-taupe bg-taupe/5 ring-2 ring-taupe/20' : 'border-line bg-surface hover:border-taupe/40'
+      className={`min-h-[52px] w-full p-3.5 rounded-lg border text-left transition-colors cursor-pointer flex items-center gap-3 ${
+        selected ? 'border-taupe bg-taupe/10 shadow-sm' : 'border-line bg-surface hover:border-taupe/40'
       }`}
     >
       <span

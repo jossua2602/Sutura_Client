@@ -54,6 +54,10 @@ export interface TrackedOrder {
   required_deposit?: number;
   fitting_requirement?: 'none' | 'optional' | 'required' | null;
   measurement_requirement?: 'none' | 'existing' | 'shop' | null;
+  /** How the customer chose to be measured (shop = "have the shop measure me"). /my-orders only. */
+  measurement_source?: 'own' | 'saved' | 'shop' | null;
+  /** The visit the shop booked to measure them; null until booked. /my-orders only. */
+  measurement_visit?: { scheduled_at: string; status: string } | null;
   id?: number;
   created_at: string;
   updated_at?: string | null;
@@ -256,6 +260,23 @@ export default function OrderTrackingView({ order, stepperLayout = 'horizontal' 
             <p className="text-xs text-ink-muted leading-relaxed">
               {order.fitting_message
                 || `Your garment is ready for fitting. Please visit our tailoring shop within ${order.fitting_visit_days ?? 7} days.`}
+            </p>
+          </div>
+        )}
+
+        {/* "Have the shop measure me": waiting for the shop to book the visit, then when to come in. */}
+        {order.measurement_source === 'shop'
+          && order.measurement_visit?.status !== 'completed'
+          && !['completed', 'cancelled', 'rejected'].includes(order.status) && (
+          <div className="mb-3 p-3.5 rounded-xl bg-taupe/10 border border-taupe/25 text-ink space-y-1">
+            <div className="flex items-center gap-2 text-taupe-dark font-bold text-xs uppercase tracking-wider">
+              <Ruler size={15} aria-hidden="true" />
+              <span>Measurement visit</span>
+            </div>
+            <p className="text-xs text-ink-body leading-relaxed">
+              {order.measurement_visit
+                ? <>Please come to the shop on <strong className="font-semibold text-ink">{new Date(order.measurement_visit.scheduled_at).toLocaleString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })}</strong> so they can take your measurements.</>
+                : 'Waiting for the shop to set your measurement visit. You\'ll be notified once it\'s booked.'}
             </p>
           </div>
         )}

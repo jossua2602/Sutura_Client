@@ -56,6 +56,7 @@ function MapPageContent() {
           route={directions.route}
           routeLoading={directions.loading}
           onCancelRoute={directions.cancel}
+          keepView={m.keepView}
         />
 
         <MapExplorePanel

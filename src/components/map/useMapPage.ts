@@ -11,6 +11,38 @@ import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
 import { DAVAO_CENTER, type StoreApiResult } from './mapTypes';
 import { reverseGeocodeCoords, searchPlacesAroundDavao } from '@/lib/geocoding';
 
+/** One map pin per branch that has a usable location. */
+function storeToPins(store: StoreApiResult): DiscoveryMapBranch[] {
+  const open = isStoreOpen(store.operating_hours);
+  return (store.branches ?? [])
+    .filter(
+      (b) =>
+        b.latitude != null &&
+        b.longitude != null &&
+        !Number.isNaN(Number(b.latitude)) &&
+        !Number.isNaN(Number(b.longitude))
+    )
+    .map((b) => ({
+      storeSlug: store.slug,
+      storeName: store.name,
+      storeLogoPath: store.logo_path,
+      branchId: b.id,
+      branchName: b.name,
+      isMain: !!b.is_main,
+      address: b.address,
+      city: b.city,
+      district: (b as { district?: string | null }).district || null,
+      landmark: b.landmark,
+      latitude: Number(b.latitude),
+      longitude: Number(b.longitude),
+      isOpen: open,
+      storeBannerPath: store.banner_path ?? null,
+      rating: store.reviews_avg_rating != null ? Number(store.reviews_avg_rating) : null,
+      reviewsCount: store.reviews_count ?? 0,
+      specializations: store.specializations ?? [],
+    }));
+}
+
 export function useMapPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -217,37 +249,7 @@ export function useMapPage() {
         .get('/public/stores', { params })
         .then((res) => {
           const stores: StoreApiResult[] = res.data.data ?? [];
-          const pins: DiscoveryMapBranch[] = stores.flatMap((store) => {
-            const open = isStoreOpen(store.operating_hours);
-            return (store.branches ?? [])
-              .filter(
-                (b) =>
-                  b.latitude != null &&
-                  b.longitude != null &&
-                  !Number.isNaN(Number(b.latitude)) &&
-                  !Number.isNaN(Number(b.longitude))
-              )
-              .map((b) => ({
-                storeSlug: store.slug,
-                storeName: store.name,
-                storeLogoPath: store.logo_path,
-                branchId: b.id,
-                branchName: b.name,
-                isMain: !!b.is_main,
-                address: b.address,
-                city: b.city,
-                district: (b as { district?: string | null }).district || null,
-                landmark: b.landmark,
-                latitude: Number(b.latitude),
-                longitude: Number(b.longitude),
-                isOpen: open,
-                storeBannerPath: store.banner_path ?? null,
-                rating: store.reviews_avg_rating != null ? Number(store.reviews_avg_rating) : null,
-                reviewsCount: store.reviews_count ?? 0,
-                specializations: store.specializations ?? [],
-              }));
-          });
-          setBranches(pins);
+          setBranches(stores.flatMap(storeToPins));
         })
         .catch(() => setBranches([]))
         .finally(() => setLoading(false));
@@ -255,6 +257,46 @@ export function useMapPage() {
 
     return () => clearTimeout(handle);
   }, [q, district, userLocation]);
+
+  // /map?shop=<slug> (the pin button on a shop's page): open that shop's main
+  // branch once the pins are in. A shop outside the first page of results is
+  // fetched on its own and added, so the link always lands on it.
+  const focusSlug = searchParams.get('shop');
+  const focusedRef = useRef(false);
+  useEffect(() => {
+    if (!focusSlug || focusedRef.current || loading || isSelectMode) return;
+    focusedRef.current = true;
+    const pick = (pins: DiscoveryMapBranch[]) => {
+      const own = pins.filter((b) => b.storeSlug === focusSlug);
+      return own.find((b) => b.isMain) ?? own[0] ?? null;
+    };
+    // The map mounts a moment after the list loads; centre it once it exists.
+    const focus = (b: DiscoveryMapBranch) => {
+      setSelectedBranch(b);
+      let tries = 0;
+      const timer = setInterval(() => {
+        if (mapRef.current) mapRef.current.setView([b.latitude, b.longitude], 15);
+        if (mapRef.current || ++tries > 50) clearInterval(timer);
+      }, 100);
+    };
+    const found = pick(branches);
+    if (found) {
+      focus(found);
+      return;
+    }
+    api
+      .get(`/public/stores/${encodeURIComponent(focusSlug)}`)
+      .then((res) => {
+        const pins = storeToPins(res.data.data as StoreApiResult);
+        const target = pick(pins);
+        if (!target) return;
+        setBranches((prev) => [...prev.filter((b) => b.storeSlug !== focusSlug), ...pins]);
+        focus(target);
+      })
+      .catch(() => {});
+  }, [focusSlug, loading, isSelectMode, branches]);
+  // Opening on one shop: don't let the map zoom out to fit every pin over it.
+  const keepView = !!focusSlug && !isSelectMode;
 
   // Distance per branch from wherever the customer is (saved or located) —
   // the list cards show it, and it orders the list nearest-first.
@@ -276,6 +318,7 @@ export function useMapPage() {
 
   return {
     isSelectMode,
+    keepView,
     mapRef,
     handleBack,
     q,

@@ -166,11 +166,22 @@ export function columnsForJobs(_jobs: Job[] = []) {
   return [...PRODUCTION_COLUMNS];
 }
 
+/**
+ * Online order where the customer asked the shop to measure them and no
+ * measurements are on the order yet (the "Needs measuring" tag).
+ */
+export function needsMeasuring(job: { measurement_source?: string | null; measurement_id?: number | null; status: string }): boolean {
+  return job.measurement_source === 'shop' && !job.measurement_id && !['completed', 'cancelled', 'rejected'].includes(job.status);
+}
+
 export interface Job {
   id: number;
   order_number?: string;
   /** The branch the order belongs to (staff of other branches can't take it). */
   store_branch_id?: number | null;
+  /** Online order: how the customer said they'd be measured (shop = "have the shop measure me"). */
+  measurement_source?: 'own' | 'saved' | 'shop' | null;
+  measurement_id?: number | null;
   intake_channel: 'walk_in' | 'online';
   fulfillment_type: 'pickup' | 'shipping' | 'delivery';
   status: string;

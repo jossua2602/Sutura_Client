@@ -172,6 +172,7 @@ export default function ServicesPage() {
           !isOwnerOrManager ? null : activeTab === 'services' ? (
             <>
               <button
+                data-tour="services-create"
                 onClick={() => { setReturnTo(null); setNewOpen(true); }}
                 className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors cursor-pointer"
               >
@@ -202,7 +203,9 @@ export default function ServicesPage() {
       </PageHeader>
 
       {activeTab === 'services' ? (
-        <ServiceGridView services={services} loading={loading} canManage={isOwnerOrManager} storeSlug={store?.slug} />
+        <div data-tour="services-list">
+          <ServiceGridView services={services} loading={loading} canManage={isOwnerOrManager} storeSlug={store?.slug} />
+        </div>
       ) : activeTab === 'packages' ? (
         <PackageGridView packages={packages} loading={packagesLoading} />
       ) : isOwnerOrManager ? (

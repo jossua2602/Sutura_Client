@@ -293,8 +293,8 @@ export default function StoreHeroHeader({
                   <button
                     type="button"
                     onClick={onOpenMap}
-                    aria-label="View branch locations on map"
-                    title="View branch locations on map"
+                    aria-label="Show this shop on the map"
+                    title="Show this shop on the map"
                     className="min-h-[46px] w-12 h-12 flex items-center justify-center bg-sunken hover:bg-line text-ink border border-line transition-colors cursor-pointer shrink-0"
                   >
                     <MapPin size={17} className="text-taupe" />

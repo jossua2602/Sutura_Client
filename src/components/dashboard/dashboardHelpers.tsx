@@ -4,7 +4,11 @@ export interface AnalyticsData {
   total_jobs: number;
   completed_jobs: number;
   total_revenue: number;
+  /** Owed on accepted orders (not cancelled/declined, not still waiting for approval). */
   total_outstanding_balance: number;
+  /** Balances on orders still waiting for the shop's approval. */
+  pending_approval_balance?: number;
+  pending_approval_count?: number;
   upcoming_appointments: number;
   total_appointments: number;
   total_services: number;
