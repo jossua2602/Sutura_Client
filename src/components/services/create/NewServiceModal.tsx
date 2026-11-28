@@ -104,6 +104,8 @@ export default function NewServiceModal({ isOpen, storeId, onClose, onCreated }:
         {/* ── 1: image + reference chart ── */}
         <div className="flex flex-col gap-3.5">
           <div className={PANEL}>
+            <p className={LABEL}>Service photo <span className="font-normal text-ink-muted">(Optional)</span></p>
+            <p className="-mt-1 mb-2.5 text-xs text-ink-muted">Customers see it on this service and in search.</p>
             <ImageDropZone value={d.image_url} onChange={(url) => patch({ image_url: url })} storeId={storeId} />
           </div>
           <div className={PANEL}>
@@ -222,7 +224,7 @@ function DaysInput({ id, label, value, onChange, disabled, min = 1, invalid = fa
   );
 }
 
-/** Dashed drop zone with the chosen image previewed inside it (remove with ×). */
+/** Compact dashed drop zone with the chosen photo previewed beside it (remove with ×). */
 function ImageDropZone({ value, onChange, storeId }: Readonly<{ value: string; onChange: (url: string) => void; storeId: number }>) {
   const { upload, uploading } = useImageUpload(storeId);
   const [dragging, setDragging] = useState(false);
@@ -236,22 +238,22 @@ function ImageDropZone({ value, onChange, storeId }: Readonly<{ value: string; o
       onDragOver={(e) => { e.preventDefault(); if (!uploading) setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={(e) => { e.preventDefault(); setDragging(false); if (!uploading) void take(e.dataTransfer.files?.[0]); }}
-      className={`flex min-h-32 items-center gap-3 border-2 border-dashed p-3 transition-colors ${dragging ? 'border-taupe bg-taupe/10' : 'border-taupe/40 bg-white'}`}
+      className={`flex min-h-16 items-center gap-3 border-2 border-dashed px-3 py-2 transition-colors ${dragging ? 'border-taupe bg-taupe/10' : 'border-taupe/40 bg-white'}`}
     >
-      <label className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-2 text-center">
-        {uploading ? <Loader2 size={26} className="animate-spin text-taupe" aria-hidden="true" /> : <UploadCloud size={28} className="text-taupe" aria-hidden="true" />}
+      <label className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2.5 text-center">
+        {uploading ? <Loader2 size={20} className="shrink-0 animate-spin text-taupe" aria-hidden="true" /> : <UploadCloud size={20} className="shrink-0 text-taupe" aria-hidden="true" />}
         <span className="text-sm text-ink-body">
-          {uploading ? 'Uploading…' : dragging ? 'Drop to upload' : <>Drag &amp; drop service image here or <span className="font-semibold text-taupe underline underline-offset-2">browse</span></>}
+          {uploading ? 'Uploading…' : dragging ? 'Drop to upload' : <>Drop a photo here or <span className="font-semibold text-taupe underline underline-offset-2">browse</span></>}
         </span>
         <input type="file" accept="image/*" className="sr-only" disabled={uploading} onChange={(e) => { void take(e.target.files?.[0]); e.target.value = ''; }} />
       </label>
       {value && (
-        <div className="relative h-24 w-20 shrink-0 overflow-hidden border border-line bg-sunken">
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden border border-line bg-sunken">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={getMediaUrl(value)} alt="Service image preview" className="h-full w-full object-cover" />
           <button type="button" onClick={() => onChange('')} aria-label="Remove image"
-            className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-ink shadow hover:bg-white cursor-pointer">
-            <X size={14} aria-hidden="true" />
+            className="absolute right-0.5 top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/95 text-ink shadow hover:bg-white cursor-pointer">
+            <X size={12} aria-hidden="true" />
           </button>
         </div>
       )}

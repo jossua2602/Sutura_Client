@@ -13,11 +13,34 @@ export interface PlaceSearchResult {
 // A free service that hangs must not hold the address on "Locating…" forever.
 const LOOKUP_TIMEOUT_MS = 5000;
 
-// Photon (OSM / Komoot): short, street-level names ("Abreeza Residences,
-// Poblacion, Davao City"). Null when it has nothing usable.
+// "Talomo District" → "Talomo".
+const cleanDistrict = (d?: string) => (d ?? '').replace(/\s+district$/i, '').trim();
+
+/** "Street, Barangay, District, City" with blanks and repeats left out. */
+function joinAddress(...parts: (string | undefined)[]): string {
+  const out: string[] = [];
+  for (const p of parts) {
+    const v = p?.trim();
+    if (v && !out.includes(v)) out.push(v);
+  }
+  return out.join(', ');
+}
+
+// Photon (OSM / Komoot): short, street-level names. Asks for the nearest
+// street first: the nearest thing of any kind is often a hotel, school or
+// shop, whose own street can be a block away (someone on Jasmin Street was
+// shown "Citistyle Inn, Rafael Castillo"). If no street comes back, the
+// nearest feature is used, with its street ahead of its name, because the
+// name changes every few metres as the reading drifts. Null when it has
+// nothing usable.
 async function photonReverse(lat: number, lng: number): Promise<GeocodeResult | null> {
+  return (await photonQuery(lat, lng, true)) ?? photonQuery(lat, lng, false);
+}
+
+async function photonQuery(lat: number, lng: number, streetOnly: boolean): Promise<GeocodeResult | null> {
   try {
-    const res = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}`, {
+    const layer = streetOnly ? '&layer=street&limit=1' : '';
+    const res = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}${layer}`, {
       headers: { Accept: 'application/json' },
       signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
     });
@@ -25,51 +48,42 @@ async function photonReverse(lat: number, lng: number): Promise<GeocodeResult | 
     const data = await res.json();
     const feature = data?.features?.[0]?.properties;
     if (!feature) return null;
-    const parts: string[] = [];
-    // Street first: `name` is the nearest shop or landmark, which changes
-    // every few metres (Jollibee → BDO → a cinema) as the browser's reading
-    // drifts on each refresh, though the visitor hasn't moved. A road feature
-    // has no `street`, so its `name` (the road) is used then.
-    const primary = feature.street || feature.name;
-    if (primary) parts.push(primary);
-    if (feature.locality && !parts.includes(feature.locality)) parts.push(feature.locality); // barangay / suburb
-    if (feature.district && !parts.includes(feature.district)) parts.push(feature.district); // Poblacion, Buhangin…
-    if (feature.city && !parts.includes(feature.city)) parts.push(feature.city);
-    if (parts.length === 0) return null;
+    // A street feature's `name` is the street itself.
+    const primary = streetOnly ? feature.name || feature.street : feature.street || feature.name;
+    const district = cleanDistrict(feature.district);
+    const address = joinAddress(primary, feature.locality, district, feature.city);
+    if (!address) return null;
     return {
-      address: parts.join(', '),
-      district: feature.district || feature.locality || feature.city || 'Davao City',
-      street: feature.street || feature.name,
+      address,
+      district: district || feature.locality || feature.city || 'Davao City',
+      street: primary,
     };
   } catch {
     return null;
   }
 }
 
-// Nominatim (OSM): usually faster here, but a longer display name.
+// Nominatim (OSM): usually faster here. Asked at street zoom (17), and the
+// label is built from the address parts: display_name starts with whatever
+// building or shop is nearest.
 async function nominatimReverse(lat: number, lng: number): Promise<GeocodeResult | null> {
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=17&addressdetails=1`,
       { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) },
     );
     if (!res.ok) return null;
     const data = await res.json();
-    if (!data?.display_name) return null;
-    // Same rule as Photon: drop a leading shop/landmark name so the label
-    // starts with the street and doesn't change with small GPS drift.
-    const display: string = data.name && data.address?.road && data.display_name.startsWith(`${data.name}, `)
-      ? data.display_name.slice(data.name.length + 2)
-      : data.display_name;
+    const a = data?.address;
+    if (!a && !data?.display_name) return null;
+    const barangay = a?.quarter || a?.neighbourhood || a?.village;
+    const district = cleanDistrict(a?.suburb || a?.city_district);
+    const address = a?.road ? joinAddress(a.road, barangay, district, a.city || 'Davao City') : data?.display_name;
+    if (!address) return null;
     return {
-      address: display,
-      district:
-        data?.address?.suburb ||
-        data?.address?.neighbourhood ||
-        data?.address?.city_district ||
-        data?.address?.city ||
-        'Davao City',
-      street: data?.address?.road,
+      address,
+      district: district || barangay || a?.city || 'Davao City',
+      street: a?.road,
     };
   } catch {
     return null;
@@ -150,14 +164,16 @@ async function lookupAddress(lat: number, lng: number): Promise<GeocodeResult | 
   return result ?? bigDataCloudReverse(lat, lng);
 }
 
-export async function searchPlacesAroundDavao(query: string): Promise<PlaceSearchResult[]> {
+async function singleQueryPlaces(query: string): Promise<PlaceSearchResult[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
   // Strategy 1: Photon search biased to Davao City (7.0707, 125.6083)
   try {
     const res = await fetch(
-      `https://photon.komoot.io/api/?q=${encodeURIComponent(trimmed)}&lat=7.0707&lon=125.6083&limit=8`,
+      // bbox: only places in the Davao area (the same box as the Nominatim search below). Without it Photon
+      // only leans toward Davao, and "… in front of … Gym" came back with gyms in Karachi and Korea.
+      `https://photon.komoot.io/api/?q=${encodeURIComponent(trimmed)}&lat=7.0707&lon=125.6083&bbox=125.30,6.85,125.80,7.40&limit=8`,
       { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) }
     );
     if (res.ok) {
@@ -171,7 +187,8 @@ export async function searchPlacesAroundDavao(query: string): Promise<PlaceSearc
             const primary = p.name || p.street;
             if (primary) parts.push(primary);
             if (p.locality && !parts.includes(p.locality)) parts.push(p.locality);
-            if (p.district && !parts.includes(p.district)) parts.push(p.district);
+            const district = cleanDistrict(p.district);
+            if (district && !parts.includes(district)) parts.push(district);
             if (p.city && !parts.includes(p.city)) parts.push(p.city);
 
             const display_name = parts.join(', ');
@@ -216,4 +233,63 @@ export async function searchPlacesAroundDavao(query: string): Promise<PlaceSearc
   }
 
   return [];
+}
+
+// "St." → "Street", "Brgy." → "Barangay": OSM spells these out.
+function expandAbbreviations(text: string): string {
+  return text
+    .replace(/\bste?\b\.?/gi, 'Street')
+    .replace(/\bave\b\.?/gi, 'Avenue')
+    .replace(/\bblvd\b\.?/gi, 'Boulevard')
+    .replace(/\brd\b\.?/gi, 'Road')
+    .replace(/\bext\b\.?/gi, 'Extension')
+    .replace(/\b(?:brgy|bgy)\b\.?/gi, 'Barangay')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// "in front of", "near", "corner"…: how people describe a spot here, which the map services don't understand.
+const LANDMARK_WORDS =
+  /\b(?:in\s*front\s*of|infront\s*of|front\s*of|fronting|near(?:\s*by|\s*to)?|beside|next\s*to|across(?:\s*from)?|opposite(?:\s*to)?|corner|cor\.?|along|behind|back\s*of|adjacent\s*to|close\s*to|between)\b/i;
+
+/** At most this many extra searches when the full text finds nothing. */
+const MAX_RETRIES = 4;
+
+/**
+ * Places around Davao City for what the visitor typed. When the full text
+ * finds nothing, tries again with "St." spelled out, then each part of
+ * "Pichon St. in front of Almendras Gym" on its own (street, then landmark).
+ * Normal searches make one request, same as before.
+ * Adapted from Joshua's map branch (map-for-bongo).
+ */
+export async function searchPlacesAroundDavao(query: string): Promise<PlaceSearchResult[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  const direct = await singleQueryPlaces(trimmed);
+  if (direct.length > 0) return direct;
+
+  const tries: string[] = [];
+  const add = (q: string) => {
+    const v = q.trim().replace(/^[,\s.-]+|[,\s.-]+$/g, '');
+    if (v.length >= 2 && v !== trimmed && !/^(?:davao|davao city|philippines)$/i.test(v) && !tries.includes(v)) tries.push(v);
+  };
+  add(expandAbbreviations(trimmed));
+  const splitter = new RegExp(LANDMARK_WORDS.source, 'gi');
+  const parts = LANDMARK_WORDS.test(trimmed) ? trimmed.split(splitter) : trimmed.includes(',') ? trimmed.split(',') : [];
+  for (const part of parts) add(expandAbbreviations(part.replace(/,\s*davao.*$/i, '')));
+
+  const found: PlaceSearchResult[] = [];
+  const seen = new Set<string>();
+  for (const q of tries.slice(0, MAX_RETRIES)) {
+    for (const hit of await singleQueryPlaces(q)) {
+      const key = `${hit.lat.toFixed(4)},${hit.lng.toFixed(4)}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        found.push(hit);
+      }
+    }
+    if (found.length >= 8) break;
+  }
+  return found.slice(0, 8);
 }

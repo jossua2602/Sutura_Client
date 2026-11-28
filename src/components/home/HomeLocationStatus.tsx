@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Loader2, MapPin, MapPinOff } from 'lucide-react';
-import type { SavedLocation } from '@/lib/customerLocation';
+import { isApproximate, type SavedLocation } from '@/lib/customerLocation';
 import type { LocationStatus } from './useHomeData';
 
 /**
@@ -117,7 +117,17 @@ export default function HomeLocationStatus({
       </span>
     );
     // The Davao City fallback isn't the visitor's spot, so invite them to set it.
-    link = <Link href="/location" className={linkClass}>{location.isDefault ? 'Set my location' : 'Change'}</Link>;
+    // A rough reading (Wi-Fi, no GPS) is close but not exact: say so and let them fix it.
+    const rough = !location.isDefault && isApproximate(location);
+    link = (
+      <Link
+        href="/location"
+        className={linkClass}
+        title={rough ? `Your device placed you within about ${location.accuracy} m. Pick the exact spot on the map.` : undefined}
+      >
+        {location.isDefault ? 'Set my location' : rough ? 'Not exact? Fix it' : 'Change'}
+      </Link>
+    );
   }
 
   if (bar) {

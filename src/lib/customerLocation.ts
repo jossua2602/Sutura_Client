@@ -10,6 +10,8 @@ export interface SavedLocation {
   lng: number;
   address: string;
   district: string;
+  /** How close the device's reading was, in metres. Only set for "Use my location"; a place picked on the map has none. */
+  accuracy?: number;
   /** True when this is the Davao City fallback, not the visitor's real spot. */
   isDefault?: boolean;
 }
@@ -263,9 +265,9 @@ export function requestCurrentLocation(
     return;
   }
 
-  navigator.geolocation.getCurrentPosition(
+  getBestPosition(
     async (pos) => {
-      const { latitude, longitude } = pos.coords;
+      const { latitude, longitude, accuracy } = pos.coords;
       let address = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
       let district = 'Davao City';
 
@@ -282,6 +284,7 @@ export function requestCurrentLocation(
         lng: longitude,
         address,
         district,
+        accuracy: Number.isFinite(accuracy) ? Math.round(accuracy) : undefined,
       };
 
       saveLocationWithHistory(loc);
@@ -290,8 +293,72 @@ export function requestCurrentLocation(
     (err) => {
       onError?.(err);
     },
-    { enableHighAccuracy: true, timeout: 10000 }
   );
+}
+
+/** Stop listening once a reading is this close (metres). A phone's GPS usually gets there in 1 to 3 seconds. */
+const GOOD_ENOUGH_M = 30;
+/** Listen this long at most, then use the closest reading so far. */
+const WATCH_WINDOW_MS = 6000;
+
+/**
+ * The closest position the device can give in a few seconds.
+ *
+ * The browser's first reading is often a cached or rough Wi-Fi / cell guess, and GPS sharpens over the next
+ * seconds. So this listens to fresh readings, keeps the one with the smallest accuracy radius, and stops early
+ * once it is within GOOD_ENOUGH_M. If nothing fresh arrives in the window (GPS off, indoors), it asks once more
+ * for a rough reading up to a minute old. A laptop without GPS still answers from Wi-Fi; `accuracy` then says
+ * the spot is approximate (see isApproximate). Calls exactly one of the two callbacks, once.
+ * Adapted from Joshua's map branch (map-for-bongo).
+ */
+export function getBestPosition(
+  onSuccess: (pos: GeolocationPosition) => void,
+  onError: (err: GeolocationPositionError | Error) => void,
+): void {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    onError(new Error('Geolocation not supported'));
+    return;
+  }
+
+  let best: GeolocationPosition | null = null;
+  let done = false;
+  let watchId: number | null = null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const roughFallback = () => {
+    navigator.geolocation.getCurrentPosition(onSuccess, onError, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60_000 });
+  };
+
+  const finish = (err?: GeolocationPositionError) => {
+    if (done) return;
+    done = true;
+    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    if (timer) clearTimeout(timer);
+    if (best) onSuccess(best);
+    else if (err) onError(err);
+    else roughFallback();
+  };
+
+  watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      if (!best || pos.coords.accuracy < best.coords.accuracy) best = pos;
+      if (pos.coords.accuracy <= GOOD_ENOUGH_M) finish();
+    },
+    (err) => {
+      // Blocked (PERMISSION_DENIED) is final. Anything else ends the wait with what we have.
+      if (err.code === err.PERMISSION_DENIED) finish(err);
+      else if (!best) finish();
+    },
+    { enableHighAccuracy: true, maximumAge: 0, timeout: WATCH_WINDOW_MS },
+  );
+  timer = setTimeout(() => finish(), WATCH_WINDOW_MS);
+}
+
+/** Past this radius (metres) the spot came from Wi-Fi or the network, not GPS. */
+export const APPROXIMATE_M = 150;
+
+export function isApproximate(loc: Pick<SavedLocation, 'accuracy'> | null | undefined): boolean {
+  return typeof loc?.accuracy === 'number' && loc.accuracy > APPROXIMATE_M;
 }
 
 const sleep = (ms: number) => new Promise<null>((r) => setTimeout(() => r(null), ms));
@@ -409,5 +476,6 @@ async function toLocation(pos: GeolocationPosition, geocodeMs: number, upgradeLa
     // Coordinates as the label read as "Davao City" in the banner (formatFullLocationAddress).
     address: geo?.address ?? `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
     district: geo?.district ?? 'Davao City',
+    accuracy: Number.isFinite(pos.coords.accuracy) ? Math.round(pos.coords.accuracy) : undefined,
   };
 }

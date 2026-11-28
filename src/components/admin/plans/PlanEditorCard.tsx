@@ -21,6 +21,17 @@ export interface AdminPlan {
   is_active: boolean;
 }
 
+// The perks SUTURA really has, per plan (same lists as the server migration
+// 2026_11_28_120000_keep_only_real_plan_perks). Anything else typed in is just text.
+// "Featured Store Visibility (Top Placement)" must keep this exact wording: the
+// server reads it to mark a shop as featured.
+const STANDARD_PERKS: Record<string, string[]> = {
+  basic: ['Customer Management', 'Appointment Scheduling', 'Order Tracking', 'Measurement Recording', 'Standard Search Listing'],
+  pro: ['All Basic Plan Features', 'Sales & Staff Reports', 'SMS Text Notifications'],
+  premium: ['All Pro Plan Features', 'Multi-Branch Management', 'Featured Store Visibility (Top Placement)', 'Branch Comparison Reports', 'Income & Receipt Exports'],
+};
+const REAL_PERKS = new Set(Object.values(STANDARD_PERKS).flat());
+
 const FIELD = 'w-full min-h-11 border border-line-strong bg-surface px-3 text-base text-ink focus:border-ink focus:outline-none';
 const NUMBERS = [
   ['price_monthly', 'Monthly (₱)'], ['price_yearly', 'Yearly (₱)'], ['max_staff', 'Max staff'],
@@ -32,6 +43,8 @@ export default function PlanEditorCard({ plan, onSaved }: { readonly plan: Admin
   const [draft, setDraft] = useState(plan);
   const [features, setFeatures] = useState((plan.features ?? []).join('\n'));
   const [saving, setSaving] = useState(false);
+  const standard = STANDARD_PERKS[plan.slug];
+  const unknown = features.split('\n').map((f) => f.trim()).filter((f) => f && !REAL_PERKS.has(f));
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +86,24 @@ export default function PlanEditorCard({ plan, onSaved }: { readonly plan: Admin
         Perks (one per line)
         <textarea rows={5} value={features} onChange={(e) => setFeatures(e.target.value)} className={`${FIELD} mt-1 py-2`} />
       </label>
+      <p className="mt-2 text-xs text-ink-faint">
+        Shops see these on the plan cards. Only list what this plan really unlocks; reports, text messages, branches,
+        featured placement and exports follow the plan itself, not this text.
+      </p>
+      {unknown.length > 0 && (
+        <p className="mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2">
+          Not a SUTURA feature, so shops won&apos;t get it: {unknown.join(', ')}.
+        </p>
+      )}
+      {standard && (
+        <button
+          type="button"
+          onClick={() => setFeatures(standard.join('\n'))}
+          className="mt-2 min-h-9 border border-line-strong bg-surface px-3 text-xs font-semibold text-ink hover:bg-sunken"
+        >
+          Use the standard perks for {draft.name}
+        </button>
+      )}
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <label className="inline-flex min-h-11 items-center gap-2 text-sm text-ink">

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
 import type { SavedLocation, RecentLocation } from '@/lib/customerLocation';
-import { getRecentLocations, addRecentLocation } from '@/lib/customerLocation';
+import { getRecentLocations, addRecentLocation, getBestPosition } from '@/lib/customerLocation';
 import { parseCoordsFromMapsLink, cleanLocationQuery, isGoogleMapsLink } from '@/lib/parseLocationInput';
 import api from '@/lib/axios';
 import { focusOn } from '@/lib/mapFocus';
@@ -90,7 +90,7 @@ export function useLocationPickerState(
     setLocating(true);
     setError('');
     setShowSuggestions(false);
-    navigator.geolocation.getCurrentPosition(
+    getBestPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
         jumpTo(latitude, longitude);
@@ -101,7 +101,6 @@ export function useLocationPickerState(
         setError('Could not get your location. Check your browser’s location permission and try again.');
         setLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
     );
   }
 

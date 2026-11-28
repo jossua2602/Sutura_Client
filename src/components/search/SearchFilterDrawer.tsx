@@ -5,8 +5,6 @@ import { X, RotateCcw, TrendingUp, TrendingDown, Star, Check, Sparkles, ChevronD
 import { FILTER_TABS, FilterTabKey, DISTRICTS, SearchActiveTab } from './types';
 import { getCategoryCollections } from '@/lib/navSearchCategories';
 import {
-  DEPARTMENTS,
-  DEPARTMENT_LABELS,
   GARMENT_STRUCTURE_LABELS,
   GARMENT_TYPE_LABELS,
   SERVICE_CATEGORIES,
@@ -102,16 +100,6 @@ export default function SearchFilterDrawer({
     ? serviceTypesFor(draftServiceCategory as ServiceCategory)
     : [];
 
-  const departmentOptions = DEPARTMENTS.map((d) => ({ value: d, label: DEPARTMENT_LABELS[d] }));
-
-  const handleDeptClick = (deptKey: string) => {
-    const next = department === deptKey ? '' : deptKey;
-    setDepartment?.(next);
-    setDraftSubcategory?.('');
-    setDraftStructure?.('');
-    setDraftGarmentType?.('');
-    setDraftSpecialization('');
-  };
 
   const handleSubcatClick = (subcatKey: string) => {
     const next = draftSubcategory === subcatKey ? '' : subcatKey;
@@ -292,16 +280,6 @@ export default function SearchFilterDrawer({
                 </>
               ) : (
                 <>
-                  <RadioFilterSection
-                    title="Department"
-                    sectionKey="department"
-                    isOpen={openSections.department}
-                    onToggle={toggleSection}
-                    options={departmentOptions}
-                    selected={department}
-                    onSelect={handleDeptClick}
-                    allLabel="All Departments"
-                  />
 
                   {department && availableSubcategories.length > 0 && (
                     <RadioFilterSection

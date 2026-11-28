@@ -13,7 +13,7 @@ import type { ServiceGroup } from './ServiceCategoryList';
 const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDigits: 0 })}`;
 
 /**
- * "View Catalog" on a category card: every service in that category
+ * "View services" on a category card: every service in that category
  * ("Uniform — Catalog Designs" → PNP Uniform), each with booking and details.
  */
 export default function ServiceCategoryModal({

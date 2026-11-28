@@ -240,7 +240,7 @@ export default function ForShopsView() {
         {/* How it starts */}
         <section aria-labelledby="steps-title" className="border-t border-[#EAE3D9] py-16 sm:py-20">
           <div className="mx-auto max-w-6xl mobile-screen-margins">
-            <h2 id="steps-title" className={H2}>From application to your first booking.</h2>
+            <h2 id="steps-title" className={H2}>How to join SUTURA.</h2>
             <ol className="mt-10 divide-y divide-[#E2D8CC] border-y border-[#E2D8CC]">
               {STEPS.map((s, i) => (
                 <li key={s.title} className="grid gap-2 py-5 sm:grid-cols-[2.5rem_1fr_2fr_7rem] sm:items-baseline sm:gap-6">
@@ -252,7 +252,6 @@ export default function ForShopsView() {
               ))}
             </ol>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href={APPLY} className={PRIMARY}>Apply now <ArrowRight size={16} aria-hidden="true" /></Link>
               <Link href="/terms?for=shop" className={SECONDARY}>Read the shop terms</Link>
             </div>
           </div>

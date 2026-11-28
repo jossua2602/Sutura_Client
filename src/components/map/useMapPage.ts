@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Map as LeafletMap } from 'leaflet';
 import api from '@/lib/axios';
-import { getSavedLocation, haversineKm, saveLocationWithHistory, type SavedLocation } from '@/lib/customerLocation';
+import { getSavedLocation, haversineKm, saveLocationWithHistory, type SavedLocation, getBestPosition } from '@/lib/customerLocation';
 import { parseCoordsFromMapsLink, cleanLocationQuery } from '@/lib/parseLocationInput';
 import { isStoreOpen } from '@/lib/storeStatus';
 import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
@@ -200,7 +200,7 @@ export function useMapPage() {
     }
     setLocating(true);
     setLocationError('');
-    navigator.geolocation.getCurrentPosition(
+    getBestPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
         setUserLocation({ lat: latitude, lng: longitude });
@@ -212,7 +212,6 @@ export function useMapPage() {
         setLocationError('Could not get your location. Check browser location permissions.');
         setLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
     );
   }
 

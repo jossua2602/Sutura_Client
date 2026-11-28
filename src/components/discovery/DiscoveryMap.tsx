@@ -390,8 +390,10 @@ export default function DiscoveryMap({
   );
 
   return (
+    // `isolate`: Leaflet stacks its tiles, pins and controls at z-index 400–1000. Without a stacking context of its
+    // own, an embedded map slides over the page's sticky search header (z-40) when you scroll.
     <div
-      className={fullScreen ? 'absolute inset-0' : 'relative rounded-2xl overflow-hidden border border-line'}
+      className={fullScreen ? 'absolute inset-0' : 'relative isolate rounded-2xl overflow-hidden border border-line'}
       style={fullScreen ? undefined : { height: 520 }}
     >
       <MapContainer center={center} zoom={14} scrollWheelZoom zoomControl={false} style={{ height: '100%', width: '100%' }}>

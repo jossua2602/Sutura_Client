@@ -4,8 +4,6 @@ import React, { useState } from 'react';
 import { RotateCcw, Star, SlidersHorizontal, Check, TrendingUp, TrendingDown, ChevronDown } from 'lucide-react';
 import { getCategoryCollections } from '@/lib/navSearchCategories';
 import {
-  DEPARTMENTS,
-  DEPARTMENT_LABELS,
   GARMENT_STRUCTURE_LABELS,
   GARMENT_TYPE_LABELS,
   SERVICE_CATEGORIES,
@@ -93,7 +91,6 @@ export default function SearchWebFilterSidebar({
     : [];
   const availableServiceTypes = serviceCategory ? serviceTypesFor(serviceCategory as ServiceCategory) : [];
 
-  const departmentOptions = DEPARTMENTS.map((d) => ({ value: d, label: DEPARTMENT_LABELS[d] }));
 
   // All sections are OPEN by default as requested ("naka default na open lahat makita lahat")
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -111,15 +108,6 @@ export default function SearchWebFilterSidebar({
 
   const toggleSection = (key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const handleDeptClick = (deptKey: string) => {
-    const next = department === deptKey ? '' : deptKey;
-    setDepartment?.(next);
-    setSubcategory?.('');
-    setStructure?.('');
-    setGarmentType?.('');
-    setSpecialization('');
   };
 
   const handleSubcatClick = (subcatKey: string) => {
@@ -203,17 +191,6 @@ export default function SearchWebFilterSidebar({
         </>
       ) : (
         <>
-          {/* 2. Department (Men/Women/Kids, +Services on the Stores tab) */}
-          <RadioFilterSection
-            title="Department"
-            sectionKey="department"
-            isOpen={openSections.department}
-            onToggle={toggleSection}
-            options={departmentOptions}
-            selected={department}
-            onSelect={handleDeptClick}
-            allLabel="All Departments"
-          />
 
           {/* 3. Subcategory (e.g. Formal Wear, Traditional Wear...) — only once a real Department (not "Services") is picked */}
           {department && availableSubcategories.length > 0 && (

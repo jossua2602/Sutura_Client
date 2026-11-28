@@ -6,6 +6,7 @@ import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { getItemColorOptions, isAngleLabel } from '@/lib/fabricHelper';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 import { CatalogItem, CatalogItemImage, MapBranch } from '../types';
+import { getBestPosition } from '@/lib/customerLocation';
 
 export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
@@ -281,7 +282,7 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     }
     setLocating(true);
     setLocateError('');
-    navigator.geolocation.getCurrentPosition(
+    getBestPosition(
       (pos) => {
         setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setLocating(false);
@@ -290,7 +291,6 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
         setLocateError('Unable to get your location. Check your location permission.');
         setLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
     );
   };
 

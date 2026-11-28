@@ -14,6 +14,7 @@ import {
   saveHomeLocation,
   removeHomeLocation,
   haversineKm,
+  getBestPosition,
 } from '@/lib/customerLocation';
 import { parseCoordsFromMapsLink, cleanLocationQuery } from '@/lib/parseLocationInput';
 import { reverseGeocodeCoords, searchPlacesAroundDavao } from '@/lib/geocoding';
@@ -149,9 +150,10 @@ export function useLocationPageState() {
     }
     setLocatingCurrent(true);
     setSearchError('');
-    navigator.geolocation.getCurrentPosition(
+    getBestPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
+        const accuracy = Number.isFinite(pos.coords.accuracy) ? Math.round(pos.coords.accuracy) : undefined;
         try {
           const res = await reverseGeocodeCoords(latitude, longitude);
           handleSelectLocation({
@@ -159,6 +161,7 @@ export function useLocationPageState() {
             lng: longitude,
             address: res.address,
             district: res.district,
+            accuracy,
           });
         } catch {
           handleSelectLocation({
@@ -166,6 +169,7 @@ export function useLocationPageState() {
             lng: longitude,
             address: `GPS (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
             district: 'Davao City',
+            accuracy,
           });
         } finally {
           setLocatingCurrent(false);
@@ -175,7 +179,6 @@ export function useLocationPageState() {
         setSearchError('Unable to get location. Check browser permissions.');
         setLocatingCurrent(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
     );
   }
 

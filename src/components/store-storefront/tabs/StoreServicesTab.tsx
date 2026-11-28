@@ -36,7 +36,7 @@ const groupOf = (s: PublicService) => s.showcase_category || 'custom_tailoring';
 
 /**
  * The storefront Services tab: one card per category the shop uses (Uniform…);
- * "View Catalog" opens a dialog listing that category's services (PNP Uniform)
+ * "View services" opens a dialog listing that category's services (PNP Uniform)
  * with booking and details. Designs live inside their service
  * (catalog_items.service_id); any not linked to one sit under "More designs".
  */
@@ -105,7 +105,7 @@ export default function StoreServicesTab({
   // Create modal picks one), so filtering to unlinked ones would hide them.
   const looseDesigns = catalogItems;
 
-  // "View Catalog" on a category card opens that category's services in a dialog.
+  // "View services" on a category card opens that category's services in a dialog.
   const [openGroupValue, setOpenGroupValue] = useState<string | null>(null);
   const openGroup = groups.find((g) => g.value === openGroupValue) ?? null;
 

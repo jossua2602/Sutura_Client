@@ -182,8 +182,10 @@ export function useStoreStorefront(storeId: string) {
   // Catalog State
   const [catalogItems, setCatalogItems] = useState<CatalogListItem[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
-  const [catalogSearch, setCatalogSearch] = useState(() => searchParams.get('q') || searchParams.get('search') || '');
-  const [serviceSearch, setServiceSearch] = useState(() => searchParams.get('q') || searchParams.get('search') || '');
+  // Both start empty. They used to start from the Search page's ?q=, so searching a shop by name ("Sakuragi")
+  // and opening it hid every service and design, since none of them is called that.
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [serviceSearch, setServiceSearch] = useState('');
 
   // Portfolio Filters
   const [priceSort, setPriceSort] = useState<'' | 'price_asc' | 'price_desc'>('');
@@ -215,20 +217,6 @@ export function useStoreStorefront(storeId: string) {
   const [highlightedItemId, setHighlightedItemId] = useState<number | null>(null);
   const hasScrolledToItem = useRef(false);
   const isAutoScrolling = useRef(false);
-  const hasScrolledToSearchTab = useRef(false);
-
-  // Sync search query from URL — reflects the query into whichever tab the
-  // link actually pointed at (?tab=services&q=... from the Search page's
-  // Services tab should land on Services pre-filled, not force Catalog).
-  const currentQParam = searchParams.get('q') || searchParams.get('search') || '';
-  const [prevQParam, setPrevQParam] = useState(currentQParam);
-  if (currentQParam !== prevQParam) {
-    setPrevQParam(currentQParam);
-    if (currentQParam) {
-      setServiceSearch(currentQParam);
-      setActiveTab('services');
-    }
-  }
 
   // Deep-link catalog item scroll
   useEffect(() => {
@@ -282,44 +270,6 @@ export function useStoreStorefront(storeId: string) {
     const timer = setTimeout(() => tryScroll(0), 100);
     return () => clearTimeout(timer);
   }, [searchParams, catalogLoading, catalogItems, activeTab]);
-
-  // Arrived here via a search (landing hero -> /search -> "click shop" link,
-  // which forwards ?tab=catalog&q=<label>) — the label already switches to
-  // the Catalog tab and pre-fills catalogSearch above, but on a fresh page
-  // load the visitor still lands at the very top of the page (cover banner
-  // + profile header), with the tab bar/catalog grid below the fold. Scroll
-  // down to it automatically instead of making them scroll past the header
-  // themselves. Same retry-until-mounted + scroll-lock pattern as the
-  // catalog item deep-link above, reusing tabBarRef (already wired into
-  // StoreHeroHeader's tab bar) as the target. Fires once per page load,
-  // on every breakpoint (mobile, tablet, and desktop).
-  useEffect(() => {
-    if (!currentQParam || hasScrolledToSearchTab.current) return;
-
-    const tryScrollToTabs = (attempts = 0) => {
-      const targetElement = tabBarRef.current;
-      if (targetElement) {
-        hasScrolledToSearchTab.current = true;
-        isAutoScrolling.current = true;
-
-        const targetRect = targetElement.getBoundingClientRect();
-        window.scrollTo({
-          top: Math.max(0, window.scrollY + targetRect.top - 70),
-          behavior: 'smooth',
-        });
-
-        const scrollLockTimer = setTimeout(() => {
-          isAutoScrolling.current = false;
-        }, 1200);
-        return () => clearTimeout(scrollLockTimer);
-      } else if (attempts < 6) {
-        setTimeout(() => tryScrollToTabs(attempts + 1), 150);
-      }
-    };
-
-    const timer = setTimeout(() => tryScrollToTabs(0), 100);
-    return () => clearTimeout(timer);
-  }, [currentQParam]);
 
   // Facet tallies
   const garmentTypeTally = useMemo(() => {
