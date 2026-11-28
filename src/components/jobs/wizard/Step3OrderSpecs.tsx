@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Sparkles,
   Scissors,
@@ -134,6 +134,16 @@ export default function Step3OrderSpecs({
   // marked as Alterations & Repairs still gets its full list.
   const repairServices = services.filter((s) => serviceHasType(s, 'alteration_repair'));
   const alterationServices = repairServices.length > 0 ? repairServices : services;
+
+  // An order must be linked to a service (the server requires it), but for a repair the shop types the real price
+  // on the next step. So when the shop has a repair service, link it here without asking; the picker only shows
+  // for a shop with no service marked as Alterations & Repairs.
+  const autoRepairService = isAlteration ? repairServices[0] ?? null : null;
+  useEffect(() => {
+    if (!autoRepairService) return;
+    if (!repairServices.some((s) => s.id.toString() === selectedServiceId)) onSelectService(autoRepairService.id.toString());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRepairService?.id, selectedServiceId]);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -358,6 +368,7 @@ export default function Step3OrderSpecs({
                 );
               })}
             </div>
+            {!autoRepairService && (
             <div className="sm:max-w-[calc(50%-0.5rem)]">
               <label htmlFor="alteration-service" className="block text-xs font-semibold text-ink mb-1.5">
                 Service &amp; price
@@ -377,6 +388,7 @@ export default function Step3OrderSpecs({
               </select>
               <p className="mt-1.5 text-[11px] text-ink-muted">Sets the price on the next step. Pick the one that covers the work above.</p>
             </div>
+            )}
           </fieldset>
 
           <div className="p-4 bg-amber-50/60 border border-amber-200/80 rounded-xl space-y-2">

@@ -57,6 +57,11 @@ export function useAppointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading]           = useState(true);
   const [viewMode, setViewMode]         = useState<'table' | 'cards' | 'calendar'>('table');
+  // Phones open on Cards: the table squeezed onto a phone cut names to "Mikha…" and pushed the time off screen.
+  // Set after mount (not in useState) so the server and client render the same first view.
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 767px)').matches) setViewMode('cards');
+  }, []);
   const [calSubMode, setCalSubMode]     = useState<'month' | 'day'>('month');
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | 'all'>('all');
   const [typeFilter, setTypeFilter]     = useState<AppointmentType | 'all'>('all');

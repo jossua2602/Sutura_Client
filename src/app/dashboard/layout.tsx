@@ -249,9 +249,11 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
     <div className="h-dvh bg-canvas flex flex-col overflow-hidden print:h-auto print:overflow-visible">
       {/* ── Header: Aligned 1:1 with desktop rail width (Cloudflare-style) ── */}
       <header className="print:hidden h-16 bg-surface border-b border-line flex items-center sticky top-0 z-50">
-        {/* Left Box: 100% matched to rail width (w-60 / w-16) with vertical border-r */}
+        {/* Left Box: 100% matched to rail width (w-60 / w-16) with vertical border-r.
+            Below lg it gives way (a long shop name truncates) so the bell, help and account buttons stay on screen;
+            it used to be shrink-0, which pushed them off the right edge on phones. */}
         <div
-          className={`h-full flex items-center px-3.5 gap-2 shrink-0 transition-[width] duration-200 ease-out lg:border-r border-line ${
+          className={`h-full flex items-center px-3.5 gap-2 min-w-0 max-sm:flex-1 sm:max-w-[45%] lg:max-w-none lg:shrink-0 transition-[width] duration-200 ease-out lg:border-r border-line ${
             railExpanded ? 'w-auto lg:w-60' : 'w-auto lg:w-16 lg:justify-center'
           }`}
         >
@@ -269,7 +271,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
         </div>
 
         {/* Right Main Header Area: Breadcrumbs over main workspace, tools on right */}
-        <div className="flex-1 h-full flex items-center justify-between gap-3 px-4 lg:px-6 min-w-0">
+        <div className="flex-1 max-sm:flex-none h-full flex items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 min-w-max sm:min-w-0">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <HeaderBreadcrumbs pathname={pathname} />
           </div>

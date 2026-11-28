@@ -177,17 +177,19 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
         <p className="text-xs text-white/70 mt-2">{revenueSub}</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Two per row on phones too: one per row made 14 tall cards and pushed the charts ~2,200px down. */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
       {kpis.map((kpi) => {
-        const cardClass = 'bg-surface border border-line rounded-xl p-5 flex items-start justify-between gap-3 hover:border-line-strong transition-colors';
+        const cardClass = 'bg-surface border border-line rounded-xl p-3.5 sm:p-5 flex items-start justify-between gap-3 min-w-0 hover:border-line-strong transition-colors';
         const content = (
           <>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wider text-ink-muted mb-1.5">{kpi.label}</p>
-              <h3 className="text-figure text-2xl font-semibold text-ink mb-1 break-words">{kpi.value}</h3>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-ink-muted mb-1.5">{kpi.label}</p>
+              <h3 className="text-figure text-xl sm:text-2xl font-semibold text-ink mb-1 break-words">{kpi.value}</h3>
               <p className="text-xs text-ink-faint">{kpi.sub}</p>
             </div>
-            <div className={`p-2.5 rounded-lg border shrink-0 ${kpi.color}`}>{kpi.icon}</div>
+            {/* No room beside the figure on a phone. */}
+            <div className={`hidden sm:block p-2.5 rounded-lg border shrink-0 ${kpi.color}`}>{kpi.icon}</div>
           </>
         );
         return kpi.href ? (

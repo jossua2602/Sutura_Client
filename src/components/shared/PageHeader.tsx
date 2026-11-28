@@ -25,9 +25,11 @@ export default function PageHeader({ eyebrow, title, description, actions, child
       <header className={`border-b border-line ${children ? '' : 'pb-5'}`}>
         <div className={children ? 'pb-5' : ''}>
           {eyebrow && <p className="text-eyebrow-accent">{eyebrow}</p>}
-          <div className="flex items-center justify-between gap-3 mt-2">
+          {/* flex-wrap: on a phone the actions drop under the title when both don't fit (Services' two buttons
+              used to sit on top of the title). */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-2">
             <h1 className="text-display text-3xl font-semibold text-ink min-w-0">{title}</h1>
-            {actions && <div className="flex items-center gap-2.5 shrink-0">{actions}</div>}
+            {actions && <div className="flex flex-wrap items-center gap-2.5">{actions}</div>}
           </div>
           {description && <div className="text-sm text-ink-muted mt-2 max-w-2xl">{description}</div>}
         </div>

@@ -206,10 +206,11 @@ export default function JobsPageToolbar({
           )}
         </div>
 
-        {/* Right side: Search Input + View Mode Switcher */}
-        <div className="flex items-center gap-2.5">
+        {/* Right side: Search Input + View Mode Switcher. On a phone the row takes the full width and the search
+            box shrinks to fit (a fixed 240px box pushed the view switcher past the card's edge). */}
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
           {/* Search Input */}
-          <div className="relative">
+          <div className="relative flex-1 min-w-0 sm:flex-none">
             <Search
               size={14}
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted/70 pointer-events-none"
@@ -219,7 +220,7 @@ export default function JobsPageToolbar({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search order or customer..."
-              className="h-9.5 pl-9 pr-3.5 bg-canvas/40 border border-line rounded-xl text-xs text-ink placeholder:text-ink-muted/60 focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe w-60 sm:w-72 shadow-2xs transition-all"
+              className="h-9.5 pl-9 pr-3.5 bg-canvas/40 border border-line rounded-xl text-xs text-ink placeholder:text-ink-muted/60 focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe w-full sm:w-72 shadow-2xs transition-all"
             />
             {search && (
               <button

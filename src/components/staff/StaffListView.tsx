@@ -320,7 +320,7 @@ export default function StaffListView({
     setBranchFilter('all');
   };
 
-  const selectClass = 'px-3 py-2 bg-surface border border-line rounded-xl text-xs font-semibold text-ink-body focus:outline-none focus:border-taupe shadow-2xs cursor-pointer';
+  const selectClass = 'min-w-0 px-3 py-2 bg-surface border border-line rounded-xl text-xs font-semibold text-ink-body focus:outline-none focus:border-taupe shadow-2xs cursor-pointer';
 
   return (
     <div data-tour="staff-list" className="bg-surface shadow-2xs border border-line rounded-2xl overflow-hidden">
@@ -334,8 +334,9 @@ export default function StaffListView({
           <div className="h-4 bg-line/60 rounded w-24 sm:ml-auto" />
         </div>
       ) : (
-        <div className="p-4 sm:p-5 border-b border-line flex flex-col sm:flex-row sm:items-center gap-3 sm:flex-wrap bg-canvas/30">
-          <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search staff by name, role, skill..." className="w-full sm:w-64" />
+        <div className="p-4 sm:p-5 border-b border-line grid grid-cols-2 gap-3 sm:flex sm:flex-row sm:items-center sm:flex-wrap bg-canvas/30">
+          {/* Phones: search on its own row, then the filters two per row (one per row pushed the roster far down). */}
+          <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search staff by name, role, skill..." className="col-span-2 w-full sm:w-64" />
 
           <select
             value={roleFilter}
@@ -391,13 +392,13 @@ export default function StaffListView({
             <button
               type="button"
               onClick={clearFilters}
-              className="flex items-center gap-1 text-xs font-bold text-taupe hover:text-taupe-hover px-2 py-1 cursor-pointer"
+              className="flex items-center gap-1 text-xs font-bold text-taupe hover:text-taupe-hover px-2 py-1 cursor-pointer justify-self-start"
             >
               <X size={14} /> Clear filters
             </button>
           )}
 
-          <span className="text-xs text-ink-faint font-medium sm:ml-auto">
+          <span className="col-span-2 text-xs text-ink-faint font-medium sm:ml-auto">
             {filteredStaff.length} of {staff.length} staff
           </span>
         </div>
